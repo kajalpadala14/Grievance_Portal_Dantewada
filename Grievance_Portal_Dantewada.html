@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सार्वजनिक शिकायत पोर्टल - दक्षिण बस्तर दंतेवाडा</title>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="src/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header (Dynamic content populated via JavaScript) -->
+        <div class="header">
+            <h1 id="portalTitle">🔴 सार्वजनिक शिकायत पोर्टल</h1>
+            <p id="portalSubtitle">दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab(0)">📊 डैशबोर्ड | Dashboard</button>
+            <button class="tab-btn" onclick="switchTab(1)">📝 शिकायत दर्ज करें | File Grievance</button>
+            <button class="tab-btn" onclick="switchTab(2)">📋 सभी शिकायतें | All Grievances</button>
+        </div>
+
+        <div class="content">
+            <!-- Dashboard Tab -->
+            <div class="tab-content active">
+                <!-- Stat Cards (Populated Dynamically from Config & Data) -->
+                <div class="dashboard-grid" id="dashboardGrid"></div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📈 शिकायत स्थिति वितरण | Grievance Status Distribution</div>
+                    <div class="bar-chart" id="barChart"></div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📍 ब्लॉक अनुसार शिकायतें | Grievances by Block</div>
+                    <div class="bar-chart" id="blockChart"></div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">🏷️ कारण अनुसार शिकायतें | Grievances by Reason</div>
+                    <div class="bar-chart" id="reasonChart"></div>
+                </div>
+
+            </div>
+
+            <!-- Form Tab -->
+            <div class="tab-content">
+                <div class="success-message" id="successMessage">
+                    ✓ आपकी शिकायत सफलतापूर्वक जमा हो गई है। | Your grievance has been submitted successfully.
+                </div>
+
+                <div class="info-box">
+                    <strong>महत्वपूर्ण सूचना:</strong> कृपया सभी आवश्यक (*) क्षेत्र भरें। आपकी शिकायत 48 घंटे में प्रक्रिया की जाएगी।<br>
+                    <strong>Important Notice:</strong> Please fill all required (*) fields. Your grievance will be processed within 48 hours.
+                </div>
+
+                <form id="grievanceForm">
+                    <!-- Personal Information Section -->
+                    <div class="section-title">👤 व्यक्तिगत जानकारी | Personal Information</div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="applicantName" class="required">हितग्राही / आवेदक का नाम | Applicant Name</label>
+                            <input type="text" id="applicantName" name="applicantName" placeholder="पूरा नाम दर्ज करें" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fatherName" class="required">पिता/पति का नाम | Father/Husband Name</label>
+                            <input type="text" id="fatherName" name="fatherName" placeholder="नाम दर्ज करें" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="age" class="required">आयु | Age</label>
+                            <input type="number" id="age" name="age" min="0" max="120" placeholder="आयु दर्ज करें" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">दूरभाष | Phone Number (10 अंक)</label>
+                            <input type="tel" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}" placeholder="10 अंकों का मोबाइल नंबर" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <!-- Address Information Section -->
+                    <div class="section-title">📍 पता जानकारी | Address Information</div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="block" class="required">ब्लॉक | Block</label>
+                            <!-- Dynamically populated from config / Sheet -->
+                            <select id="block" name="block" required>
+                                <option value="">-- लोड हो रहा है... / Loading Blocks... --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="panchayat">ग्राम पंचायत | Village Panchayat</label>
+                            <input type="text" id="panchayat" name="panchayat" placeholder="ग्राम पंचायत का नाम">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="village" class="required">ग्राम | Village</label>
+                            <input type="text" id="village" name="village" placeholder="ग्राम का नाम" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">ईमेल | Email</label>
+                            <input type="email" id="email" name="email" maxlength="100" placeholder="example@email.com">
+                        </div>
+                    </div>
+
+                    <!-- Identity Information Section -->
+                    <div class="section-title">🆔 पहचान जानकारी | Identity Information</div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="aadhar">आधार नंबर | Aadhaar Number (12 अंक)</label>
+                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" inputmode="numeric">
+                        </div>
+                        <div class="form-group">
+                            <label for="enrollment">एनरोलमेंट नंबर | Enrollment Number (28 अंक)</label>
+                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[0-9]{28}" placeholder="28 अंकों का एनरोलमेंट नंबर" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <!-- Grievance Details Section -->
+                    <div class="section-title">📋 शिकायत विवरण | Grievance Details</div>
+
+                    <div class="form-group form-grid full">
+                        <label for="reason" class="required">ऑफिस आने का कारण | Reason for Visit/Grievance</label>
+                        <!-- Dynamically populated from config / Sheet -->
+                        <select id="reason" name="reason" required>
+                            <option value="">-- लोड हो रहा है... / Loading Reasons... --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group form-grid full">
+                        <label for="description" class="required">विस्तृत विवरण | Detailed Description</label>
+                        <textarea id="description" name="description" placeholder="अपनी शिकायत का विस्तृत विवरण यहाँ दर्ज करें..." required></textarea>
+                    </div>
+
+                    <!-- Current Status Section -->
+                    <div class="section-title">✓ वर्तमान स्थिति | Current Status</div>
+
+                    <div class="form-group">
+                        <label class="required">स्थिति चुनें | Select Status</label>
+                        <!-- Dynamically populated from config / Sheet -->
+                        <div class="status-options" id="statusOptionsContainer"></div>
+                    </div>
+
+                    <!-- Remarks Section -->
+                    <div class="section-title">💬 टिप्पणियां | Remarks</div>
+
+                    <div class="form-group form-grid full">
+                        <label for="remarks">अतिरिक्त टिप्पणियां | Additional Remarks</label>
+                        <textarea id="remarks" name="remarks" placeholder="कोई अतिरिक्त जानकारी यहाँ जोड़ें..."></textarea>
+                    </div>
+
+                    <!-- Submission Date -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="date" class="required">आवेदन की तारीख | Date of Application</label>
+                            <input type="date" id="date" name="date" required>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="button-group">
+                        <button type="submit" class="btn-submit">✓ जमा करें | SUBMIT</button>
+                        <button type="reset" class="btn-reset">↻ साफ करें | CLEAR</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- All Grievances Tab -->
+            <div class="tab-content">
+                <div class="info-box">
+                    <strong>📋 सभी पंजीकृत शिकायतें | All Registered Grievances</strong><br>
+                    यह सूची सभी जमा की गई शिकायतों को दिखाती है | This list shows all submitted grievances
+                </div>
+
+                <div id="grievancesContainer" style="margin-top: 20px;">
+                    <div class="empty-message">
+                        🔍 कोई शिकायत नहीं मिली | No grievances found<br>
+                        नई शिकायतें यहाँ दिखाई देंगी | New grievances will appear here
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer (Dynamic content populated via JavaScript) -->
+        <div class="footer">
+            <p id="portalCopyright">© 2024 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District</p>
+            <p id="portalHours">शिकायत पंजीकरण समय | Grievance Registration Hours: 9:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)</p>
+        </div>
+    </div>
+
+    <!-- Submission Success Modal Popup -->
+    <div class="modal-overlay" id="submissionModal">
+        <div class="modal-card">
+            <div class="modal-icon-wrapper">
+                <div class="modal-icon-circle">✓</div>
+            </div>
+            <h2 class="modal-title">शिकायत दर्ज हो गई है!</h2>
+            <p class="modal-subtitle">Grievance Submitted Successfully</p>
+            
+            <div class="modal-body">
+                <div class="modal-info-row">
+                    <span class="modal-label">शिकायत क्रमांक (ID):</span>
+                    <strong class="modal-val" id="modalGrievanceId">-</strong>
+                </div>
+                <div class="modal-info-row">
+                    <span class="modal-label">आवेदक का नाम:</span>
+                    <span class="modal-val" id="modalApplicantName">-</span>
+                </div>
+                <div class="modal-info-row">
+                    <span class="modal-label">सिंक स्थिति:</span>
+                    <span class="modal-status-badge synced" id="modalSyncStatus">Google Sheet में दर्ज</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-close" id="closeModalBtn">ठीक है | OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External JavaScript (ES Module) -->
+    <script type="module" src="src/js/script.js"></script>
+</body>
+</html>
