@@ -316,13 +316,13 @@ function getDynamicConfig(ss, dataSheet) {
     }
   }
 
-  // 3. Fallback defaults if not set in sheet
+  // 3. Ensure locations and blocks default to empty object/array if not in sheet (NO HARDCODED LOCATIONS)
   if (!config.locations) {
-    config.locations = getDefaultLocations();
+    config.locations = {};
   }
 
-  if (!config.blocks || config.blocks.length === 0) {
-    config.blocks = Object.keys(config.locations).map(b => ({ value: b, label: b }));
+  if (!config.blocks) {
+    config.blocks = [];
   }
 
   if (!config.reasons || config.reasons.length === 0) {
@@ -352,6 +352,7 @@ function getDynamicConfig(ss, dataSheet) {
  * Read hierarchical locations (Block -> Panchayat -> Village) from Sheet
  * Checks for a tab named: "Locations", "Panchayats", "Villages", "MasterData", or "स्थान"
  * Format: Col A: Block | Col B: Gram Panchayat | Col C: Village
+ * Purely dynamic - NO hardcoded data
  */
 function getSheetLocations(ss) {
   const possibleNames = ["Locations", "Panchayats", "Villages", "MasterData", "स्थान", "ग्राम_पंचायत", "पंचायात"];
@@ -391,40 +392,6 @@ function getSheetLocations(ss) {
   }
 
   return Object.keys(locations).length > 0 ? locations : null;
-}
-
-/**
- * Default Dantewada District Locations (Fallback)
- */
-function getDefaultLocations() {
-  return {
-    "दंतेवाडा": {
-      "चितालंका": ["चितालंका", "भोगाम", "नेरली"],
-      "बालपेट": ["बालपेट", "मासापारा", "कोडेनार"],
-      "टेकनार": ["टेकनार", "कसेनार", "गदापाल"],
-      "मटेनार": ["मटेनार", "पंडेवार", "कटेनार"],
-      "दंतेवाडा": ["दंतेवाडा (मुख्यालय)", "पुराना बाजार", "मेंढका"]
-    },
-    "गीदम": {
-      "जावंगा": ["जावंगा", "कारली", "पाहुरनार"],
-      "कारली": ["कारली", "हारम"],
-      "बारसूर": ["बारसूर", "मुचनार", "मंगनार"],
-      "छिंदनार": ["छिंदनार", "पाहुरनार"],
-      "गीदम": ["गीदम (मुख्यालय)", "कौशल नगर"]
-    },
-    "कुआकोंडा": {
-      "कुआकोंडा": ["कुआकोंडा (मुख्यालय)", "मैलावाड़ा"],
-      "नकुलनार": ["नकुलनार", "बड़ेगुडरा"],
-      "समलूर": ["समलूर", "पालनार"],
-      "रीता": ["रीता", "पिनेरली"]
-    },
-    "कटेकल्याण": {
-      "कटेकल्याण": ["कटेकल्याण (मुख्यालय)", "बड़ेगोड़े"],
-      "मारजुम": ["मारजुम", "गादापाल"],
-      "तुमकपाल": ["तुमकपाल", "परचेली"],
-      "तेतम": ["तेतम", "मुंडा"]
-    }
-  };
 }
 
 /**

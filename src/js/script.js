@@ -80,12 +80,23 @@ function renderFormOptions(config) {
             : (config.blocks || []);
 
         const currentValue = blockSelect.value;
-        let html = '<option value="">-- चयन करें / Select Block --</option>';
-        blocksList.forEach(b => {
-            const isSelected = b.value === currentValue ? 'selected' : '';
-            html += `<option value="${escapeHtml(b.value)}" ${isSelected}>${escapeHtml(b.label || b.value)}</option>`;
-        });
+        let html = '';
+        if (blocksList.length === 0) {
+            html = '<option value="">-- शीट से लोड हो रहा है... / Loading from Sheet... --</option>';
+        } else {
+            html = '<option value="">-- चयन करें / Select Block --</option>';
+            blocksList.forEach(b => {
+                const isSelected = b.value === currentValue ? 'selected' : '';
+                html += `<option value="${escapeHtml(b.value)}" ${isSelected}>${escapeHtml(b.label || b.value)}</option>`;
+            });
+            html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+        }
         blockSelect.innerHTML = html;
+
+        // If a block was already selected, refresh dependent dropdowns
+        if (currentValue && config.locations && config.locations[currentValue]) {
+            handleBlockChange();
+        }
     }
 
     // 2. Populate Reason Dropdown

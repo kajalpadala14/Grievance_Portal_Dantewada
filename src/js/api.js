@@ -20,21 +20,18 @@ export async function getInitialData() {
   let config = DEFAULT_CONFIG;
   let grievances = getStoredGrievances();
 
-  // 1. Check if we have cached config in localStorage, merging safely with DEFAULT_CONFIG
+  // 1. Check if we have cached config in localStorage
   const cachedConfig = localStorage.getItem(LOCAL_CONFIG_KEY);
   if (cachedConfig) {
     try {
       const parsed = JSON.parse(cachedConfig);
-      config = {
-        ...DEFAULT_CONFIG,
-        ...parsed,
-        locations: (parsed.locations && Object.keys(parsed.locations).length > 0)
-          ? parsed.locations
-          : DEFAULT_CONFIG.locations,
-        blocks: (parsed.blocks && parsed.blocks.length > 0)
-          ? parsed.blocks
-          : DEFAULT_CONFIG.blocks
-      };
+      // Only retain cached locations if they were actually fetched from the Sheet
+      if (parsed.isFromSheet && parsed.locations && Object.keys(parsed.locations).length > 0) {
+        config = { ...DEFAULT_CONFIG, ...parsed };
+      } else {
+        localStorage.removeItem(LOCAL_CONFIG_KEY);
+        config = { ...DEFAULT_CONFIG, locations: {}, blocks: [] };
+      }
     } catch (e) {
       config = DEFAULT_CONFIG;
     }
@@ -51,12 +48,13 @@ export async function getInitialData() {
             config = {
               ...DEFAULT_CONFIG,
               ...result.config,
+              isFromSheet: true,
               locations: (result.config.locations && Object.keys(result.config.locations).length > 0)
                 ? result.config.locations
-                : config.locations,
+                : {},
               blocks: (result.config.blocks && result.config.blocks.length > 0)
                 ? result.config.blocks
-                : config.blocks
+                : []
             };
             localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
             console.log('[API] Loaded configuration from Google Sheet:', config);
