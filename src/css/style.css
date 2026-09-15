@@ -571,8 +571,8 @@ input[type="checkbox"] {
     }
 }
 
-/* Mobile Devices & Phones (<= 680px) */
-@media (max-width: 680px) {
+/* Mobile Devices & Phones (<= 768px) */
+@media (max-width: 768px) {
     body {
         padding: 0;
         background: #f1f5f9;
@@ -632,6 +632,11 @@ input[type="checkbox"] {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         margin-bottom: 20px;
+    }
+
+    /* Hide quick action buttons on phone view */
+    .dashboard-actions {
+        display: none !important;
     }
 
     .stat-card {
