@@ -157,10 +157,18 @@ function setupEventListeners() {
         });
     }
 
-    // 4. Modal close handlers
+    // 4. Modal handlers
     const closeModalBtn = document.getElementById('closeModalBtn');
     if (closeModalBtn) {
         closeModalBtn.addEventListener('click', closeSubmissionModal);
+    }
+
+    const modalViewAllBtn = document.getElementById('modalViewAllBtn');
+    if (modalViewAllBtn) {
+        modalViewAllBtn.addEventListener('click', () => {
+            closeSubmissionModal();
+            switchTab(2);
+        });
     }
 
     const modal = document.getElementById('submissionModal');
@@ -176,6 +184,15 @@ function setupEventListeners() {
         if (e.key === 'Escape') {
             closeSubmissionModal();
         }
+    });
+
+    // 5. Explicit tab click event listeners (ensures tabs switch reliably on every device)
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach((btn, index) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchTab(index);
+        });
     });
 }
 
@@ -196,6 +213,12 @@ export function switchTab(tabIndex) {
         updateDashboard();
     } else if (tabIndex === 2) {
         displayGrievances();
+    }
+
+    // Scroll smoothly to top of content on mobile
+    const mainTabNav = document.getElementById('mainTabNav');
+    if (mainTabNav) {
+        mainTabNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 

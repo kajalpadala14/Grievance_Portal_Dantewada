@@ -15,11 +15,29 @@
             <p id="portalSubtitle">दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada</p>
         </div>
 
-        <!-- Tab Navigation -->
-        <div class="tab-navigation">
-            <button class="tab-btn active" onclick="switchTab(0)">📊 डैशबोर्ड | Dashboard</button>
-            <button class="tab-btn" onclick="switchTab(1)">📝 शिकायत दर्ज करें | File Grievance</button>
-            <button class="tab-btn" onclick="switchTab(2)">📋 सभी शिकायतें | All Grievances</button>
+        <!-- Tab Navigation (Sticky & 100% Visible on all devices) -->
+        <div class="tab-navigation" id="mainTabNav">
+            <button class="tab-btn active" data-tab="0" onclick="switchTab(0)">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label-wrap">
+                    <span class="tab-title">डैशबोर्ड</span>
+                    <span class="tab-sub">Dashboard</span>
+                </span>
+            </button>
+            <button class="tab-btn" data-tab="1" data-nav="form" onclick="switchTab(1)">
+                <span class="tab-icon">📝</span>
+                <span class="tab-label-wrap">
+                    <span class="tab-title">शिकायत दर्ज करें</span>
+                    <span class="tab-sub">File Grievance</span>
+                </span>
+            </button>
+            <button class="tab-btn" data-tab="2" data-nav="list" onclick="switchTab(2)">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label-wrap">
+                    <span class="tab-title">सभी शिकायतें</span>
+                    <span class="tab-sub">All Grievances</span>
+                </span>
+            </button>
         </div>
 
         <div class="content">
@@ -27,6 +45,16 @@
             <div class="tab-content active">
                 <!-- Stat Cards (Populated Dynamically from Config & Data) -->
                 <div class="dashboard-grid" id="dashboardGrid"></div>
+
+                <!-- Quick Navigation Action Buttons -->
+                <div class="dashboard-actions">
+                    <button type="button" class="btn-action-primary" onclick="switchTab(1)">
+                        📝 नई शिकायत दर्ज करें | File New Grievance
+                    </button>
+                    <button type="button" class="btn-action-secondary" onclick="switchTab(2)">
+                        📋 सभी शिकायतें देखें | View All Grievances
+                    </button>
+                </div>
 
                 <div class="chart-container">
                     <div class="chart-title">📈 शिकायत स्थिति वितरण | Grievance Status Distribution</div>
@@ -221,7 +249,8 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn-modal-close" id="closeModalBtn">ठीक है | OK</button>
+                <button type="button" class="btn-modal-close" id="closeModalBtn">✓ ठीक है | OK</button>
+                <button type="button" class="btn-modal-secondary" id="modalViewAllBtn">📋 सभी शिकायतें देखें | View All Grievances</button>
             </div>
         </div>
     </div>
