@@ -246,26 +246,33 @@ function formatSheetDate(dateVal) {
 }
 
 /**
- * Dynamic Configuration (Reads from Config tab if present, else auto-detects or defaults)
+ * Dynamic Configuration (Reads from Config tab & Locations tab if present, else auto-detects or defaults)
  */
 function getDynamicConfig(ss, dataSheet) {
-  let configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
+  let config = {
+    portalInfo: {
+      title: "🔴 सार्वजनिक शिकायत पोर्टल",
+      subtitle: "दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada",
+      officeHours: "शिकायत पंजीकरण समय | Grievance Registration Hours: 9:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)",
+      copyright: "© 2024 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District"
+    },
+    locations: null,
+    blocks: [],
+    reasons: [],
+    statuses: []
+  };
 
-  // If Config sheet exists, read from it
+  // 1. Read Hierarchical Locations (Block -> Gram Panchayat -> Village) from Sheet
+  const sheetLocations = getSheetLocations(ss);
+  if (sheetLocations) {
+    config.locations = sheetLocations;
+    config.blocks = Object.keys(sheetLocations).map(b => ({ value: b, label: b }));
+  }
+
+  // 2. Read Config tab if it exists
+  let configSheet = ss.getSheetByName(CONFIG_SHEET_NAME);
   if (configSheet) {
     const configData = configSheet.getDataRange().getValues();
-    const config = {
-      portalInfo: {
-        title: "🔴 सार्वजनिक शिकायत पोर्टल",
-        subtitle: "दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada",
-        officeHours: "शिकायत पंजीकरण समय | Grievance Registration Hours: 9:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)",
-        copyright: "© 2024 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District"
-      },
-      blocks: [],
-      reasons: [],
-      statuses: []
-    };
-
     for (let i = 1; i < configData.length; i++) {
       const category = String(configData[i][0] || "").trim().toLowerCase();
       const val = String(configData[i][1] || "").trim();
@@ -276,7 +283,7 @@ function getDynamicConfig(ss, dataSheet) {
 
       if (category === "portalinfo") {
         config.portalInfo[val] = label;
-      } else if (category === "block") {
+      } else if (category === "block" && (!config.blocks || config.blocks.length === 0)) {
         config.blocks.push({ value: val, label: label });
       } else if (category === "reason") {
         config.reasons.push({ value: val, label: label });
@@ -284,40 +291,112 @@ function getDynamicConfig(ss, dataSheet) {
         config.statuses.push({ id: val, label: label, color: extra || "#3498db" });
       }
     }
-
-    if (config.blocks.length > 0 && config.reasons.length > 0 && config.statuses.length > 0) {
-      return config;
-    }
   }
 
-  // Default dynamic config aligned with South Bastar Dantewada
-  return {
-    portalInfo: {
-      title: "🔴 सार्वजनिक शिकायत पोर्टल",
-      subtitle: "दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada",
-      officeHours: "शिकायत पंजीकरण समय | Grievance Registration Hours: 9:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)",
-      copyright: "© 2024 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District"
-    },
-    blocks: [
-      { value: "दंतेवाडा", label: "दंतेवाडा | Dantewada" },
-      { value: "गीदम", label: "गीदम | Geedam" },
-      { value: "कुआकोंडा", label: "कुआकोंडा | Kuakonda" },
-      { value: "कटेकल्याण", label: "कटेकल्याण | Katekalyan" }
-    ],
-    reasons: [
+  // 3. Fallback defaults if not set in sheet
+  if (!config.locations) {
+    config.locations = getDefaultLocations();
+  }
+
+  if (!config.blocks || config.blocks.length === 0) {
+    config.blocks = Object.keys(config.locations).map(b => ({ value: b, label: b }));
+  }
+
+  if (!config.reasons || config.reasons.length === 0) {
+    config.reasons = [
       { value: "आवेदन संबंधी", label: "आवेदन संबंधी | Application Related" },
       { value: "भुगतान संबंधी", label: "भुगतान संबंधी | Payment Related" },
       { value: "सूचना संबंधी", label: "सूचना संबंधी | Information Request" },
       { value: "दस्तावेज संबंधी", label: "दस्तावेज संबंधी | Document Related" },
       { value: "शिकायत", label: "शिकायत | Complaint" },
       { value: "अन्य", label: "अन्य | Others" }
-    ],
-    statuses: [
+    ];
+  }
+
+  if (!config.statuses || config.statuses.length === 0) {
+    config.statuses = [
       { id: "नई", label: "नई | New", color: "#3498db" },
       { id: "लंबित", label: "लंबित | Pending", color: "#f39c12" },
       { id: "हल", label: "हल | Resolved", color: "#27ae60" },
       { id: "अस्वीकृत", label: "अस्वीकृत | Rejected", color: "#e74c3c" }
-    ]
+    ];
+  }
+
+  return config;
+}
+
+/**
+ * Read hierarchical locations (Block -> Panchayat -> Village) from Sheet
+ * Checks for a tab named: "Locations", "Panchayats", "Villages", "MasterData", or "स्थान"
+ * Format: Col A: Block | Col B: Gram Panchayat | Col C: Village
+ */
+function getSheetLocations(ss) {
+  const possibleNames = ["Locations", "Panchayats", "Villages", "MasterData", "स्थान", "ग्राम_पंचायत", "पंचायात"];
+  let locSheet = null;
+
+  for (let i = 0; i < possibleNames.length; i++) {
+    locSheet = ss.getSheetByName(possibleNames[i]);
+    if (locSheet) break;
+  }
+
+  if (!locSheet) return null;
+
+  const data = locSheet.getDataRange().getValues();
+  if (data.length <= 1) return null;
+
+  const locations = {};
+  for (let i = 1; i < data.length; i++) {
+    const block = String(data[i][0] || "").trim();
+    const panchayat = String(data[i][1] || "").trim();
+    const village = String(data[i][2] || "").trim();
+
+    if (!block || !panchayat) continue;
+
+    if (!locations[block]) {
+      locations[block] = {};
+    }
+    if (!locations[block][panchayat]) {
+      locations[block][panchayat] = [];
+    }
+    if (village && locations[block][panchayat].indexOf(village) === -1) {
+      locations[block][panchayat].push(village);
+    }
+  }
+
+  return Object.keys(locations).length > 0 ? locations : null;
+}
+
+/**
+ * Default Dantewada District Locations (Fallback)
+ */
+function getDefaultLocations() {
+  return {
+    "दंतेवाडा": {
+      "चितालंका": ["चितालंका", "भोगाम", "नेरली"],
+      "बालपेट": ["बालपेट", "मासापारा", "कोडेनार"],
+      "टेकनार": ["टेकनार", "कसेनार", "गदापाल"],
+      "मटेनार": ["मटेनार", "पंडेवार", "कटेनार"],
+      "दंतेवाडा": ["दंतेवाडा (मुख्यालय)", "पुराना बाजार", "मेंढका"]
+    },
+    "गीदम": {
+      "जावंगा": ["जावंगा", "कारली", "पाहुरनार"],
+      "कारली": ["कारली", "हारम"],
+      "बारसूर": ["बारसूर", "मुचनार", "मंगनार"],
+      "छिंदनार": ["छिंदनार", "पाहुरनार"],
+      "गीदम": ["गीदम (मुख्यालय)", "कौशल नगर"]
+    },
+    "कुआकोंडा": {
+      "कुआकोंडा": ["कुआकोंडा (मुख्यालय)", "मैलावाड़ा"],
+      "नकुलनार": ["नकुलनार", "बड़ेगुडरा"],
+      "समलूर": ["समलूर", "पालनार"],
+      "रीता": ["रीता", "पिनेरली"]
+    },
+    "कटेकल्याण": {
+      "कटेकल्याण": ["कटेकल्याण (मुख्यालय)", "बड़ेगोड़े"],
+      "मारजुम": ["मारजुम", "गादापाल"],
+      "तुमकपाल": ["तुमकपाल", "परचेली"],
+      "तेतम": ["तेतम", "मुंडा"]
+    }
   };
 }
 

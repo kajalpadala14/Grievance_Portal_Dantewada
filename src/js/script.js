@@ -72,12 +72,16 @@ function applyPortalConfig(config) {
 function renderFormOptions(config) {
     if (!config) return;
 
-    // 1. Populate Block Dropdown
+    // 1. Populate Block Dropdown (from config.locations hierarchy or config.blocks)
     const blockSelect = document.getElementById('block');
-    if (blockSelect && Array.isArray(config.blocks)) {
+    if (blockSelect) {
+        const blocksList = (config.locations && Object.keys(config.locations).length > 0)
+            ? Object.keys(config.locations).map(b => ({ value: b, label: b }))
+            : (config.blocks || []);
+
         const currentValue = blockSelect.value;
         let html = '<option value="">-- चयन करें / Select Block --</option>';
-        config.blocks.forEach(b => {
+        blocksList.forEach(b => {
             const isSelected = b.value === currentValue ? 'selected' : '';
             html += `<option value="${escapeHtml(b.value)}" ${isSelected}>${escapeHtml(b.label || b.value)}</option>`;
         });
@@ -114,6 +118,145 @@ function renderFormOptions(config) {
 }
 
 /**
+ * Handle Block selection -> Populate Gram Panchayats dynamically
+ */
+function handleBlockChange() {
+    const blockSelect = document.getElementById('block');
+    const panchayatSelect = document.getElementById('panchayat');
+    const villageSelect = document.getElementById('village');
+    const panchayatCustom = document.getElementById('panchayatCustom');
+    const villageCustom = document.getElementById('villageCustom');
+
+    const selectedBlock = blockSelect ? blockSelect.value : '';
+
+    if (panchayatCustom) panchayatCustom.style.display = 'none';
+    if (villageCustom) villageCustom.style.display = 'none';
+
+    if (!selectedBlock || !currentConfig.locations || !currentConfig.locations[selectedBlock]) {
+        if (panchayatSelect) {
+            panchayatSelect.innerHTML = '<option value="">-- पहले ब्लॉक चुनें / Select Block First --</option>';
+            panchayatSelect.disabled = true;
+            panchayatSelect.value = '';
+        }
+        if (villageSelect) {
+            villageSelect.innerHTML = '<option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>';
+            villageSelect.disabled = true;
+            villageSelect.value = '';
+        }
+        return;
+    }
+
+    // Populate Gram Panchayats of the selected Block
+    const panchayats = Object.keys(currentConfig.locations[selectedBlock]);
+    let html = '<option value="">-- ग्राम पंचायत चुनें / Select Gram Panchayat --</option>';
+    panchayats.forEach(p => {
+        html += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+    });
+    html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+
+    if (panchayatSelect) {
+        panchayatSelect.innerHTML = html;
+        panchayatSelect.disabled = false;
+        panchayatSelect.value = '';
+    }
+
+    // Reset Village dropdown until Panchayat is chosen
+    if (villageSelect) {
+        villageSelect.innerHTML = '<option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>';
+        villageSelect.disabled = true;
+        villageSelect.value = '';
+    }
+}
+
+/**
+ * Handle Gram Panchayat selection -> Populate Villages dynamically
+ */
+function handlePanchayatChange() {
+    const blockSelect = document.getElementById('block');
+    const panchayatSelect = document.getElementById('panchayat');
+    const villageSelect = document.getElementById('village');
+    const panchayatCustom = document.getElementById('panchayatCustom');
+    const villageCustom = document.getElementById('villageCustom');
+
+    const selectedBlock = blockSelect ? blockSelect.value : '';
+    const selectedPanchayat = panchayatSelect ? panchayatSelect.value : '';
+
+    if (selectedPanchayat === '__OTHER__') {
+        if (panchayatCustom) {
+            panchayatCustom.style.display = 'block';
+            panchayatCustom.required = true;
+            panchayatCustom.focus();
+        }
+        if (villageSelect) {
+            villageSelect.innerHTML = '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+            villageSelect.disabled = false;
+            villageSelect.value = '__OTHER__';
+        }
+        if (villageCustom) {
+            villageCustom.style.display = 'block';
+            villageCustom.required = true;
+        }
+        return;
+    }
+
+    if (panchayatCustom) {
+        panchayatCustom.style.display = 'none';
+        panchayatCustom.required = false;
+        panchayatCustom.value = '';
+    }
+    if (villageCustom) {
+        villageCustom.style.display = 'none';
+        villageCustom.required = false;
+        villageCustom.value = '';
+    }
+
+    if (!selectedPanchayat || !currentConfig.locations || !currentConfig.locations[selectedBlock] || !currentConfig.locations[selectedBlock][selectedPanchayat]) {
+        if (villageSelect) {
+            villageSelect.innerHTML = '<option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>';
+            villageSelect.disabled = true;
+            villageSelect.value = '';
+        }
+        return;
+    }
+
+    // Populate Villages under selected Gram Panchayat
+    const villages = currentConfig.locations[selectedBlock][selectedPanchayat] || [];
+    let html = '<option value="">-- ग्राम चुनें / Select Village --</option>';
+    villages.forEach(v => {
+        html += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
+    });
+    html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+
+    if (villageSelect) {
+        villageSelect.innerHTML = html;
+        villageSelect.disabled = false;
+        villageSelect.value = '';
+    }
+}
+
+/**
+ * Handle Village selection
+ */
+function handleVillageChange() {
+    const villageSelect = document.getElementById('village');
+    const villageCustom = document.getElementById('villageCustom');
+
+    if (villageSelect && villageSelect.value === '__OTHER__') {
+        if (villageCustom) {
+            villageCustom.style.display = 'block';
+            villageCustom.required = true;
+            villageCustom.focus();
+        }
+    } else {
+        if (villageCustom) {
+            villageCustom.style.display = 'none';
+            villageCustom.required = false;
+            villageCustom.value = '';
+        }
+    }
+}
+
+/**
  * Set default date picker value to today
  */
 function setDefaultDate() {
@@ -131,6 +274,28 @@ function setupEventListeners() {
     const form = document.getElementById('grievanceForm');
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
+        form.addEventListener('reset', () => {
+            setTimeout(() => {
+                handleBlockChange();
+                setDefaultDate();
+            }, 20);
+        });
+    }
+
+    // Cascading Location Dropdown Listeners
+    const blockSelect = document.getElementById('block');
+    if (blockSelect) {
+        blockSelect.addEventListener('change', handleBlockChange);
+    }
+
+    const panchayatSelect = document.getElementById('panchayat');
+    if (panchayatSelect) {
+        panchayatSelect.addEventListener('change', handlePanchayatChange);
+    }
+
+    const villageSelect = document.getElementById('village');
+    if (villageSelect) {
+        villageSelect.addEventListener('change', handleVillageChange);
     }
 
     // 1. Phone number: numbers only, max 10 digits
@@ -231,10 +396,51 @@ async function handleFormSubmit(e) {
     const submitBtn = document.querySelector('.btn-submit');
     const originalBtnText = submitBtn ? submitBtn.innerHTML : '✓ जमा करें | SUBMIT';
 
+    const blockVal = (document.getElementById('block').value || '').trim();
+
+    const panchayatSelect = document.getElementById('panchayat');
+    const panchayatCustom = document.getElementById('panchayatCustom');
+    const panchayatVal = (panchayatSelect && panchayatSelect.value === '__OTHER__')
+        ? (panchayatCustom ? panchayatCustom.value.trim() : '')
+        : (panchayatSelect ? panchayatSelect.value.trim() : '');
+
+    const villageSelect = document.getElementById('village');
+    const villageCustom = document.getElementById('villageCustom');
+    const villageVal = (villageSelect && villageSelect.value === '__OTHER__')
+        ? (villageCustom ? villageCustom.value.trim() : '')
+        : (villageSelect ? villageSelect.value.trim() : '');
+
     const phoneVal = (document.getElementById('phone').value || '').trim();
     const aadharVal = (document.getElementById('aadhar').value || '').trim();
     const enrollmentVal = (document.getElementById('enrollment').value || '').trim();
     const emailVal = (document.getElementById('email').value || '').trim();
+
+    // 0. Location Validation
+    if (!blockVal) {
+        alert('⚠️ कृपया ब्लॉक का चयन करें।\nPlease select a Block.');
+        document.getElementById('block').focus();
+        return;
+    }
+
+    if (!panchayatVal) {
+        alert('⚠️ कृपया ग्राम पंचायत का चयन करें या दर्ज करें।\nPlease select or enter Gram Panchayat.');
+        if (panchayatSelect && panchayatSelect.value === '__OTHER__' && panchayatCustom) {
+            panchayatCustom.focus();
+        } else if (panchayatSelect) {
+            panchayatSelect.focus();
+        }
+        return;
+    }
+
+    if (!villageVal) {
+        alert('⚠️ कृपया ग्राम का चयन करें या दर्ज करें।\nPlease select or enter Village name.');
+        if (villageSelect && villageSelect.value === '__OTHER__' && villageCustom) {
+            villageCustom.focus();
+        } else if (villageSelect) {
+            villageSelect.focus();
+        }
+        return;
+    }
 
     // 1. Phone Validation: If provided, must be 10 digits
     if (phoneVal && phoneVal.length !== 10) {
@@ -278,9 +484,9 @@ async function handleFormSubmit(e) {
         fatherName: document.getElementById('fatherName').value,
         age: document.getElementById('age').value,
         phone: phoneVal,
-        block: document.getElementById('block').value,
-        panchayat: document.getElementById('panchayat').value,
-        village: document.getElementById('village').value,
+        block: blockVal,
+        panchayat: panchayatVal,
+        village: villageVal,
         email: emailVal,
         aadhar: aadharVal,
         enrollment: enrollmentVal,
@@ -301,6 +507,7 @@ async function handleFormSubmit(e) {
         openSubmissionModal(grievance, result.syncedToSheet);
 
         document.getElementById('grievanceForm').reset();
+        handleBlockChange();
         setDefaultDate();
         updateDashboard();
         displayGrievances();

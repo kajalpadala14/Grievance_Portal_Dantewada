@@ -118,19 +118,25 @@
                             <label for="block" class="required">ब्लॉक | Block</label>
                             <!-- Dynamically populated from config / Sheet -->
                             <select id="block" name="block" required>
-                                <option value="">-- लोड हो रहा है... / Loading Blocks... --</option>
+                                <option value="">-- चयन करें / Select Block --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="panchayat">ग्राम पंचायत | Village Panchayat</label>
-                            <input type="text" id="panchayat" name="panchayat" placeholder="ग्राम पंचायत का नाम">
+                            <label for="panchayat" class="required">ग्राम पंचायत | Village Panchayat</label>
+                            <select id="panchayat" name="panchayat" required disabled>
+                                <option value="">-- पहले ब्लॉक चुनें / Select Block First --</option>
+                            </select>
+                            <input type="text" id="panchayatCustom" name="panchayatCustom" placeholder="ग्राम पंचायत का नाम लिखें / Enter Panchayat" style="display: none; margin-top: 8px;">
                         </div>
                     </div>
 
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="village" class="required">ग्राम | Village</label>
-                            <input type="text" id="village" name="village" placeholder="ग्राम का नाम" required>
+                            <select id="village" name="village" required disabled>
+                                <option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>
+                            </select>
+                            <input type="text" id="villageCustom" name="villageCustom" placeholder="ग्राम का नाम लिखें / Enter Village Name" style="display: none; margin-top: 8px;">
                         </div>
                         <div class="form-group">
                             <label for="email">ईमेल | Email</label>
