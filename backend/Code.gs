@@ -34,7 +34,7 @@ const CONFIG_SHEET_NAME = "Config";
  * तो अपनी Google Sheet के URL से Sheet ID कॉपी करके यहाँ डालें:
  * उदाहरण: const SPREADSHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms";
  */
-const SPREADSHEET_ID = "";
+const SPREADSHEET_ID = "11D5GNwLgs9v02wbKxFAX4UPnY2cNeBZC6jsET9NDbnw";
 
 /**
  * Google Spreadsheet प्राप्त करने का सुरक्षित तरीका
@@ -358,7 +358,11 @@ function getSheetLocations(ss) {
     if (!locations[block][panchayat]) {
       locations[block][panchayat] = [];
     }
-    if (village && locations[block][panchayat].indexOf(village) === -1) {
+    if (!village) {
+      if (locations[block][panchayat].indexOf(panchayat) === -1) {
+        locations[block][panchayat].push(panchayat);
+      }
+    } else if (locations[block][panchayat].indexOf(village) === -1) {
       locations[block][panchayat].push(village);
     }
   }
