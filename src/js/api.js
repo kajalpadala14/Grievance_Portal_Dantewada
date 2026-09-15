@@ -1,7 +1,14 @@
 import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
 
-// Read Google Apps Script URL from .env (Vite environment variables)
-export const APPS_SCRIPT_URL = (import.meta.env && import.meta.env.VITE_APPS_SCRIPT_URL) || "";
+// Normalize Google Apps Script URL from .env (Vite environment variables)
+export const APPS_SCRIPT_URL = (() => {
+  let url = (import.meta.env && import.meta.env.VITE_APPS_SCRIPT_URL) || "";
+  url = url.trim().replace(/\/+$/, "");
+  if (url && !url.endsWith("/exec")) {
+    url += "/exec";
+  }
+  return url;
+})();
 
 const LOCAL_STORAGE_KEY = "grievances";
 const LOCAL_CONFIG_KEY = "portal_config";
@@ -13,21 +20,54 @@ export async function getInitialData() {
   let config = DEFAULT_CONFIG;
   let grievances = getStoredGrievances();
 
+  // 1. Check if we have cached config in localStorage, merging safely with DEFAULT_CONFIG
+  const cachedConfig = localStorage.getItem(LOCAL_CONFIG_KEY);
+  if (cachedConfig) {
+    try {
+      const parsed = JSON.parse(cachedConfig);
+      config = {
+        ...DEFAULT_CONFIG,
+        ...parsed,
+        locations: (parsed.locations && Object.keys(parsed.locations).length > 0)
+          ? parsed.locations
+          : DEFAULT_CONFIG.locations,
+        blocks: (parsed.blocks && parsed.blocks.length > 0)
+          ? parsed.blocks
+          : DEFAULT_CONFIG.blocks
+      };
+    } catch (e) {
+      config = DEFAULT_CONFIG;
+    }
+  }
+
+  // 2. Fetch fresh initial data from Google Apps Script
   if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
     try {
       const response = await fetch(`${APPS_SCRIPT_URL}?action=getInitialData`);
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          if (result.config && result.config.blocks && result.config.blocks.length > 0) {
-            config = result.config;
+          if (result.config) {
+            config = {
+              ...DEFAULT_CONFIG,
+              ...result.config,
+              locations: (result.config.locations && Object.keys(result.config.locations).length > 0)
+                ? result.config.locations
+                : config.locations,
+              blocks: (result.config.blocks && result.config.blocks.length > 0)
+                ? result.config.blocks
+                : config.blocks
+            };
             localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
+            console.log('[API] Loaded configuration from Google Sheet:', config);
           }
           if (Array.isArray(result.data)) {
             grievances = result.data;
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(grievances));
           }
-          return { config, grievances };
+          return { config, grievances, fromSheet: true };
+        } else {
+          console.warn("[API] Google Sheet API returned error:", result.error);
         }
       }
     } catch (err) {
@@ -35,17 +75,26 @@ export async function getInitialData() {
     }
   }
 
-  // Check if we have cached config in localStorage
-  const cachedConfig = localStorage.getItem(LOCAL_CONFIG_KEY);
-  if (cachedConfig) {
-    try {
-      config = JSON.parse(cachedConfig);
-    } catch (e) {
-      config = DEFAULT_CONFIG;
-    }
-  }
+  return { config, grievances, fromSheet: false };
+}
 
-  return { config, grievances };
+/**
+ * Directly fetch latest locations from the Google Sheet Locations tab
+ */
+export async function fetchLocationsFromSheet() {
+  if (!APPS_SCRIPT_URL) return null;
+  try {
+    const response = await fetch(`${APPS_SCRIPT_URL}?action=getLocations`);
+    if (response.ok) {
+      const result = await response.json();
+      if (result.success && result.locations && Object.keys(result.locations).length > 0) {
+        return result.locations;
+      }
+    }
+  } catch (e) {
+    console.warn("[API] Failed to fetch locations from sheet:", e);
+  }
+  return null;
 }
 
 /**

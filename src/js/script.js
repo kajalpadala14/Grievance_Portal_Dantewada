@@ -1,4 +1,4 @@
-import { getInitialData, submitGrievance, APPS_SCRIPT_URL } from './api.js';
+import { getInitialData, submitGrievance, APPS_SCRIPT_URL, fetchLocationsFromSheet } from './api.js';
 import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
 
 // Application State
@@ -296,6 +296,32 @@ function setupEventListeners() {
     const villageSelect = document.getElementById('village');
     if (villageSelect) {
         villageSelect.addEventListener('change', handleVillageChange);
+    }
+
+    // Refresh Locations directly from Google Sheet button
+    const refreshBtn = document.getElementById('refreshLocationsBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '⏳ लोड हो रहा है...';
+            try {
+                const locs = await fetchLocationsFromSheet();
+                if (locs && Object.keys(locs).length > 0) {
+                    currentConfig.locations = locs;
+                    currentConfig.blocks = Object.keys(locs).map(b => ({ value: b, label: b }));
+                    renderFormOptions(currentConfig);
+                    alert(`✓ Google Sheet से सफलता पूर्वक ${Object.keys(locs).length} ब्लॉक और उनकी पंचायतें लोड हो गईं!`);
+                } else {
+                    alert('⚠️ Google Sheet की "Locations" शीट में कोई डेटा नहीं मिला या शीट खाली है।');
+                }
+            } catch (err) {
+                alert('⚠️ Google Sheet से लोड नहीं हो सका: ' + err.message);
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = originalText;
+            }
+        });
     }
 
     // 1. Phone number: numbers only, max 10 digits

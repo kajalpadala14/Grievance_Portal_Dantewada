@@ -34,19 +34,34 @@ const CONFIG_SHEET_NAME = "Config";
  * तो अपनी Google Sheet के URL से Sheet ID कॉपी करके यहाँ डालें:
  * उदाहरण: const SPREADSHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms";
  */
-const SPREADSHEET_ID = "11D5GNwLgs9v02wbKxFAX4UPnY2cNeBZC6jsET9NDbnw";
+const SPREADSHEET_ID = "11D5GNwLgs9v02wbKxFAX4UPnY2cNeBZC6jsET9NdBnw";
 
 /**
  * Google Spreadsheet प्राप्त करने का सुरक्षित तरीका
  */
 function getSpreadsheet() {
-  if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
-    return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
+  // 1. अगर स्क्रिप्ट Extensions > Apps Script से खुली है (Container-bound)
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (err) {
+    // Continue
   }
+
+  // 2. यदि ID दी गई है (Standalone Script)
+  if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
+    try {
+      return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
+    } catch (err) {
+      console.warn("Could not open by SPREADSHEET_ID: " + err.message);
+    }
+  }
+
+  // 3. Fallback
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) {
     throw new Error(
-      "Spreadsheet नहीं मिली! यदि यह Standalone Script है, तो Code.gs के ऊपर SPREADSHEET_ID दर्ज करें, या Google Sheet में जाकर Extensions > Apps Script से इस कोड को पेस्ट करें।"
+      "Spreadsheet नहीं मिली! कृपया Google Sheet में जाकर Extensions > Apps Script से इस कोड को पेस्ट करें।"
     );
   }
   return ss;
@@ -89,6 +104,14 @@ function doGet(e) {
       return createJsonResponse({
         success: true,
         config: config
+      });
+    }
+
+    if (action === "getLocations") {
+      const locations = getSheetLocations(ss) || getDefaultLocations();
+      return createJsonResponse({
+        success: true,
+        locations: locations
       });
     }
 
