@@ -27,6 +27,9 @@ export async function getInitialData() {
       const parsed = JSON.parse(cachedConfig);
       // Only retain cached locations if they were actually fetched from the Sheet
       if (parsed.isFromSheet && parsed.locations && Object.keys(parsed.locations).length > 0) {
+        if (!parsed.reasons || parsed.reasons.length === 0 || parsed.reasons.some(r => r.value === "आवेदन संबंधी")) {
+          parsed.reasons = DEFAULT_CONFIG.reasons;
+        }
         config = { ...DEFAULT_CONFIG, ...parsed };
       } else {
         localStorage.removeItem(LOCAL_CONFIG_KEY);
@@ -45,9 +48,14 @@ export async function getInitialData() {
         const result = await response.json();
         if (result.success) {
           if (result.config) {
+            const sheetReasons = (result.config.reasons && result.config.reasons.length > 0 && !result.config.reasons.some(r => r.value === "आवेदन संबंधी"))
+              ? result.config.reasons
+              : DEFAULT_CONFIG.reasons;
+
             config = {
               ...DEFAULT_CONFIG,
               ...result.config,
+              reasons: sheetReasons,
               isFromSheet: true,
               locations: (result.config.locations && Object.keys(result.config.locations).length > 0)
                 ? result.config.locations
