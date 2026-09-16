@@ -30,6 +30,9 @@ export async function getInitialData() {
         if (!parsed.reasons || parsed.reasons.length === 0 || parsed.reasons.some(r => r.value === "आवेदन संबंधी")) {
           parsed.reasons = DEFAULT_CONFIG.reasons;
         }
+        if (parsed.portalInfo && (!parsed.portalInfo.title || parsed.portalInfo.title.includes("सार्वजनिक") || !parsed.portalInfo.copyright || parsed.portalInfo.copyright.includes("2024"))) {
+          parsed.portalInfo = DEFAULT_CONFIG.portalInfo;
+        }
         config = { ...DEFAULT_CONFIG, ...parsed };
       } else {
         localStorage.removeItem(LOCAL_CONFIG_KEY);
@@ -52,9 +55,14 @@ export async function getInitialData() {
               ? result.config.reasons
               : DEFAULT_CONFIG.reasons;
 
+            const sheetPortalInfo = (result.config.portalInfo && result.config.portalInfo.title && !result.config.portalInfo.title.includes("सार्वजनिक"))
+              ? result.config.portalInfo
+              : DEFAULT_CONFIG.portalInfo;
+
             config = {
               ...DEFAULT_CONFIG,
               ...result.config,
+              portalInfo: sheetPortalInfo,
               reasons: sheetReasons,
               isFromSheet: true,
               locations: (result.config.locations && Object.keys(result.config.locations).length > 0)

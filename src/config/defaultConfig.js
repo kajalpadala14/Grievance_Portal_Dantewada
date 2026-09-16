@@ -11,10 +11,10 @@ export const DEFAULT_LOCATIONS = {};
 
 export const DEFAULT_CONFIG = {
   portalInfo: {
-    title: "🔴 सार्वजनिक शिकायत पोर्टल",
+    title: "🔴 Aadhaar शिकायत पोर्टल",
     subtitle: "दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada",
-    officeHours: "शिकायत पंजीकरण समय | Grievance Registration Hours: 9:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)",
-    copyright: "© 2024 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District"
+    officeHours: "शिकायत पंजीकरण समय | Grievance Registration Hours: 10:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)",
+    copyright: "© 2026 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District"
   },
   locations: {},
   blocks: [],
