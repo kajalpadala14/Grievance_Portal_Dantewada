@@ -9,11 +9,29 @@
 </head>
 <body>
     <div class="container">
+        <!-- Top Tricolor Ribbon -->
+        <div class="top-tricolor-bar"></div>
+
         <!-- Header (Dynamic content populated via JavaScript) -->
-        <div class="header">
-            <h1 id="portalTitle">🔴 सार्वजनिक शिकायत पोर्टल</h1>
-            <p id="portalSubtitle">दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada</p>
-        </div>
+        <header class="header">
+            <div class="header-inner">
+                <div class="header-brand">
+                    <div class="header-emblem">🏛️</div>
+                    <div>
+                        <span class="gov-tag">जिला प्रशासन दक्षिण बस्तर दंतेवाडा | District Administration Dantewada</span>
+                        <h1 id="portalTitle">🔴 सार्वजनिक शिकायत पोर्टल</h1>
+                        <p id="portalSubtitle">दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada</p>
+                    </div>
+                </div>
+                <div class="header-badge-box">
+                    <div class="live-pill">
+                        <span class="pulse-dot"></span>
+                        <span>ऑनलाइन पोर्टल | Live Portal</span>
+                    </div>
+                    <div class="header-time" id="livePortalTime"></div>
+                </div>
+            </div>
+        </header>
 
         <!-- Tab Navigation (Sticky & 100% Visible on all devices) -->
         <div class="tab-navigation" id="mainTabNav">
@@ -37,6 +55,7 @@
                     <span class="tab-title">सभी शिकायतें</span>
                     <span class="tab-sub">All Grievances</span>
                 </span>
+                <span class="tab-badge" id="tabGrievanceCount">0</span>
             </button>
         </div>
 
@@ -236,7 +255,21 @@
                     यह सूची सभी जमा की गई शिकायतों को दिखाती है | This list shows all submitted grievances
                 </div>
 
-                <div id="grievancesContainer" style="margin-top: 20px;">
+                <!-- Search and Filter Bar -->
+                <div class="table-toolbar">
+                    <div class="toolbar-search">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="grievanceSearchInput" placeholder="नाम, फोन, आधार, कारण या ब्लॉक से खोजें... / Search...">
+                    </div>
+                    <div class="toolbar-filter">
+                        <select id="statusFilterSelect">
+                            <option value="">सभी स्थितियां | All Statuses</option>
+                        </select>
+                    </div>
+                    <div class="toolbar-count" id="grievanceCountBadge">0 शिकायतें | 0 Records</div>
+                </div>
+
+                <div id="grievancesContainer" style="margin-top: 15px;">
                     <div class="empty-message">
                         🔍 कोई शिकायत नहीं मिली | No grievances found<br>
                         नई शिकायतें यहाँ दिखाई देंगी | New grievances will appear here

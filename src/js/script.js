@@ -4,6 +4,8 @@ import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
 // Application State
 let currentConfig = DEFAULT_CONFIG;
 let grievances = [];
+let searchQuery = '';
+let statusFilterQuery = '';
 
 /**
  * Initialize application
@@ -11,6 +13,7 @@ let grievances = [];
 async function init() {
     setDefaultDate();
     setupEventListeners();
+    startLiveClock();
 
     // 1. First render with default/cached config immediately for fast initial paint
     applyPortalConfig(currentConfig);
@@ -47,6 +50,29 @@ function logApiStatus() {
     } else {
         console.log('%c[Grievance Portal] Running in Local Mode (.env VITE_APPS_SCRIPT_URL not set)', 'color: #f39c12; font-weight: bold;');
     }
+}
+
+/**
+ * Start Live Clock in Portal Header
+ */
+function startLiveClock() {
+    const timeEl = document.getElementById('livePortalTime');
+    if (!timeEl) return;
+    function updateClock() {
+        const now = new Date();
+        const options = { 
+            day: 'numeric', 
+            month: 'short', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: true 
+        };
+        timeEl.textContent = '🕒 ' + now.toLocaleString('hi-IN', options);
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
 }
 
 /**
@@ -117,14 +143,26 @@ function renderFormOptions(config) {
         let html = '';
         config.statuses.forEach((s, index) => {
             const checked = index === 0 ? 'checked' : '';
+            const color = s.color || '#2563eb';
             html += `
-                <label>
+                <label class="status-option-card" style="--status-color: ${color};">
                     <input type="radio" name="status" value="${escapeHtml(s.id)}" ${checked} required>
-                    ${escapeHtml(s.label || s.id)}
+                    <span class="status-indicator-dot" style="background-color: ${color};"></span>
+                    <span>${escapeHtml(s.label || s.id)}</span>
                 </label>
             `;
         });
         statusContainer.innerHTML = html;
+    }
+
+    // 4. Populate Status Filter Dropdown in Table Toolbar
+    const statusFilterSelect = document.getElementById('statusFilterSelect');
+    if (statusFilterSelect && Array.isArray(config.statuses)) {
+        let html = '<option value="">सभी स्थितियां | All Statuses</option>';
+        config.statuses.forEach(s => {
+            html += `<option value="${escapeHtml(s.id)}">${escapeHtml(s.label || s.id)}</option>`;
+        });
+        statusFilterSelect.innerHTML = html;
     }
 }
 
@@ -388,7 +426,24 @@ function setupEventListeners() {
         }
     });
 
-    // 5. Explicit tab click event listeners (ensures tabs switch reliably on every device)
+    // 5. All Grievances Search & Filter Listeners
+    const searchInput = document.getElementById('grievanceSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.trim().toLowerCase();
+            displayGrievances();
+        });
+    }
+
+    const statusFilterSelect = document.getElementById('statusFilterSelect');
+    if (statusFilterSelect) {
+        statusFilterSelect.addEventListener('change', (e) => {
+            statusFilterQuery = e.target.value.trim();
+            displayGrievances();
+        });
+    }
+
+    // 6. Explicit tab click event listeners (ensures tabs switch reliably on every device)
     const tabButtons = document.querySelectorAll('.tab-btn');
     tabButtons.forEach((btn, index) => {
         btn.addEventListener('click', (e) => {
@@ -627,6 +682,12 @@ function updateDashboard() {
     const total = grievances.length;
     const statuses = currentConfig.statuses || [];
 
+    // Update tab badge count
+    const tabCount = document.getElementById('tabGrievanceCount');
+    if (tabCount) {
+        tabCount.textContent = total;
+    }
+
     // Render Stat Cards dynamically
     renderDashboardCards(total, statuses, grievances);
 
@@ -644,19 +705,35 @@ function renderDashboardCards(total, statuses, data) {
     if (!grid) return;
 
     let html = `
-        <div class="stat-card total" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
-            <div class="stat-label">कुल शिकायतें | Total</div>
+        <div class="stat-card stat-card-total">
+            <div class="stat-card-header">
+                <span class="stat-label">कुल शिकायतें | Total Grievances</span>
+                <span class="stat-icon-badge total-badge">📊</span>
+            </div>
             <div class="stat-number">${total}</div>
+            <div class="stat-meta">सभी पंजीकृत आवेदन</div>
         </div>
     `;
 
+    const statusIcons = {
+        'नई': '🆕',
+        'लंबित': '⏳',
+        'हल': '✅',
+        'अस्वीकृत': '❌'
+    };
+
     statuses.forEach(status => {
         const count = data.filter(g => String(g.status).trim() === String(status.id).trim()).length;
-        const color = status.color || '#3498db';
+        const color = status.color || '#2563eb';
+        const icon = statusIcons[status.id] || '📋';
         html += `
-            <div class="stat-card" style="background: linear-gradient(135deg, ${color} 0%, ${adjustColor(color, -25)} 100%);">
-                <div class="stat-label">${escapeHtml(status.label || status.id)}</div>
-                <div class="stat-number">${count}</div>
+            <div class="stat-card" style="--accent-color: ${color};">
+                <div class="stat-card-header">
+                    <span class="stat-label">${escapeHtml(status.label || status.id)}</span>
+                    <span class="stat-icon-badge" style="background-color: ${color}15; color: ${color};">${icon}</span>
+                </div>
+                <div class="stat-number" style="color: ${color};">${count}</div>
+                <div class="stat-meta">स्थिति: ${escapeHtml(status.id)}</div>
             </div>
         `;
     });
@@ -673,7 +750,7 @@ function drawDynamicStatusChart(statuses, data) {
         return {
             label: status.label || status.id,
             value: count,
-            color: status.color || '#3498db'
+            color: status.color || '#2563eb'
         };
     });
 
@@ -695,10 +772,10 @@ function drawDynamicBlockChart() {
     const data = Object.entries(blockData).map(([label, value]) => ({
         label,
         value,
-        color: '#667eea'
+        color: '#2563eb'
     }));
 
-    const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value)) : 1;
+    const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value), 1) : 1;
     renderChart('blockChart', data, maxValue);
 }
 
@@ -716,10 +793,10 @@ function drawDynamicReasonChart() {
     const data = Object.entries(reasonData).map(([label, value]) => ({
         label,
         value,
-        color: '#764ba2'
+        color: '#7c3aed'
     }));
 
-    const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value)) : 1;
+    const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value), 1) : 1;
     renderChart('reasonChart', data, maxValue);
 }
 
@@ -733,18 +810,21 @@ function renderChart(containerId, data, maxValue) {
     container.innerHTML = '';
 
     if (data.length === 0 || data.every(d => d.value === 0)) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #7f8c8d;">कोई डेटा उपलब्ध नहीं | No data available</div>';
+        container.innerHTML = '<div class="chart-empty-state">📊 कोई डेटा उपलब्ध नहीं | No data recorded yet</div>';
         return;
     }
 
     data.forEach(item => {
-        const height = (item.value / maxValue) * 100;
+        const height = maxValue > 0 ? Math.round((item.value / maxValue) * 100) : 0;
         const bar = document.createElement('div');
         bar.className = 'bar-wrapper';
+        bar.title = `${item.label}: ${item.value}`;
         bar.innerHTML = `
             <div class="bar-value">${item.value}</div>
-            <div class="bar" style="height: ${height}%; background: linear-gradient(180deg, ${item.color} 0%, ${adjustColor(item.color, -20)} 100%);"></div>
-            <div class="bar-label">${item.label}</div>
+            <div class="bar-track">
+                <div class="bar" style="height: ${Math.max(height, 4)}%; background: ${item.color || '#2563eb'};"></div>
+            </div>
+            <div class="bar-label" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</div>
         `;
         container.appendChild(bar);
     });
@@ -760,19 +840,52 @@ function adjustColor(color, percent) {
 }
 
 /**
- * Display All Grievances in Tab 3 with dynamic status colors
+ * Display All Grievances in Tab 3 with search, filter, and dynamic status badges
  */
 function displayGrievances() {
     const container = document.getElementById('grievancesContainer');
+    const countBadge = document.getElementById('grievanceCountBadge');
     if (!container) return;
     
-    if (grievances.length === 0) {
-        container.innerHTML = `
-            <div class="empty-message">
-                🔍 कोई शिकायत नहीं मिली | No grievances found<br>
-                नई शिकायतें यहाँ दिखाई देंगी | New grievances will appear here
-            </div>
-        `;
+    // Filter grievances by searchQuery and statusFilterQuery
+    const filtered = grievances.filter(g => {
+        const matchesSearch = !searchQuery || [
+            g.applicantName,
+            g.phone,
+            g.aadhar,
+            g.enrollment,
+            g.reason,
+            g.block,
+            g.panchayat,
+            g.village,
+            g.id
+        ].some(val => String(val || '').toLowerCase().includes(searchQuery));
+
+        const matchesStatus = !statusFilterQuery || String(g.status || '').trim() === statusFilterQuery.trim();
+
+        return matchesSearch && matchesStatus;
+    });
+
+    if (countBadge) {
+        countBadge.textContent = `${filtered.length} शिकायतें | ${filtered.length} Records`;
+    }
+
+    if (filtered.length === 0) {
+        if (grievances.length === 0) {
+            container.innerHTML = `
+                <div class="empty-message">
+                    🔍 कोई शिकायत नहीं मिली | No grievances found<br>
+                    नई शिकायतें यहाँ दिखाई देंगी | New grievances will appear here
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="empty-message">
+                    🔍 खोजे गए विवरण से कोई शिकायत मेल नहीं खाती | No matching grievances found<br>
+                    कृपया अन्य नाम, फ़ोन या कारण से खोजें | Try searching with another term
+                </div>
+            `;
+        }
         return;
     }
 
@@ -782,7 +895,7 @@ function displayGrievances() {
                 <thead>
                     <tr>
                         <th>आवेदक | Applicant</th>
-                        <th>ब्लॉक/ग्राम | Block/Village</th>
+                        <th>ब्लॉक/स्थान | Block/Location</th>
                         <th>कारण | Reason</th>
                         <th>तारीख | Date</th>
                         <th>स्थिति | Status</th>
@@ -792,19 +905,26 @@ function displayGrievances() {
                 <tbody>
     `;
 
-    grievances.forEach(g => {
-        const desc = (g.description || '').substring(0, 50) + ((g.description && g.description.length > 50) ? '...' : '');
+    filtered.forEach(g => {
+        const desc = (g.description || '').substring(0, 60) + ((g.description && g.description.length > 60) ? '...' : '');
         const statusConfig = (currentConfig.statuses || []).find(s => String(s.id).trim() === String(g.status).trim());
-        const statusColor = statusConfig ? statusConfig.color : '#3498db';
-        const locationText = [g.block, g.village].filter(Boolean).join(' - ');
+        const statusColor = statusConfig ? statusConfig.color : '#2563eb';
+        const locationText = [g.block, g.panchayat, g.village].filter(Boolean).join(' • ');
 
         html += `
             <tr>
-                <td data-label="आवेदक | Applicant"><strong>${escapeHtml(g.applicantName || '')}</strong></td>
+                <td data-label="आवेदक | Applicant">
+                    <span class="table-applicant-name">${escapeHtml(g.applicantName || 'अज्ञात / Unknown')}</span>
+                    <span class="table-applicant-sub">${escapeHtml(g.phone ? '📞 ' + g.phone : (g.fatherName ? 'पिता: ' + g.fatherName : ''))}</span>
+                </td>
                 <td data-label="स्थान | Location">${escapeHtml(locationText || '-')}</td>
-                <td data-label="कारण | Reason">${escapeHtml(g.reason || '-')}</td>
+                <td data-label="कारण | Reason"><strong>${escapeHtml(g.reason || '-')}</strong></td>
                 <td data-label="तारीख | Date">${formatDate(g.date) || '-'}</td>
-                <td data-label="स्थिति | Status"><span class="status-badge" style="background-color: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}50;">${escapeHtml(g.status || 'नई')}</span></td>
+                <td data-label="स्थिति | Status">
+                    <span class="status-badge" style="background-color: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}40;">
+                        ${escapeHtml(g.status || 'नई')}
+                    </span>
+                </td>
                 <td data-label="विवरण | Description">${escapeHtml(desc || '-')}</td>
             </tr>
         `;
