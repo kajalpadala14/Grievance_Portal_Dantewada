@@ -283,9 +283,11 @@ function buildVillagesIndex(locations) {
 
 /**
  * Populate the <datalist id="allVillagesDatalist">
+ * Supports optional filtering by Block and/or Gram Panchayat
  */
-function populateAllVillagesDatalist() {
+function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null) {
     const datalist = document.getElementById('allVillagesDatalist');
+    const villageInput = document.getElementById('village');
     if (!datalist) return;
 
     if (allVillagesIndex.length === 0) {
@@ -293,12 +295,48 @@ function populateAllVillagesDatalist() {
         return;
     }
 
+    let items = allVillagesIndex;
+
+    // Filter by block if selected
+    if (filterBlock && filterBlock !== '__OTHER__') {
+        items = items.filter(item => item.block.toLowerCase() === filterBlock.toLowerCase());
+    }
+
+    // Filter by panchayat if selected
+    if (filterPanchayat && filterPanchayat !== '__OTHER__') {
+        items = items.filter(item => item.panchayat.toLowerCase() === filterPanchayat.toLowerCase());
+    }
+
     // Sort alphabetically by village name
-    const sorted = [...allVillagesIndex].sort((a, b) => a.village.localeCompare(b.village, 'hi'));
+    const sorted = [...items].sort((a, b) => a.village.localeCompare(b.village, 'hi'));
+
     let html = '';
-    sorted.forEach(item => {
-        html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
-    });
+    if (filterPanchayat && filterPanchayat !== '__OTHER__') {
+        // Panchayat is already known -> show only village names
+        sorted.forEach(item => {
+            html += `<option value="${escapeHtml(item.village)}"></option>`;
+        });
+        if (villageInput && (!villageInput.value || !filterPanchayat)) {
+            villageInput.placeholder = `गाँव का नाम चुनें या लिखें (उदा. ${sorted.slice(0, 2).map(s => s.village).join(', ')}...)`;
+        }
+    } else if (filterBlock && filterBlock !== '__OTHER__') {
+        // Block is known -> show village + panchayat
+        sorted.forEach(item => {
+            html += `<option value="${escapeHtml(item.village)} (पंचायत: ${escapeHtml(item.panchayat)})">${escapeHtml(item.village)}</option>`;
+        });
+        if (villageInput && !villageInput.value) {
+            villageInput.placeholder = `गाँव का नाम लिखें या चुनें (ब्लॉक ${filterBlock} के अंतर्गत)`;
+        }
+    } else {
+        // District-wide -> show village + panchayat + block
+        sorted.forEach(item => {
+            html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
+        });
+        if (villageInput && !villageInput.value) {
+            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें (ब्लॉक व पंचायत स्वतः भर जाएंगे)';
+        }
+    }
+
     datalist.innerHTML = html;
 }
 
@@ -313,6 +351,16 @@ function findVillageMatches(query) {
     const exactDisplay = allVillagesIndex.find(v => v.displayLabel.toLowerCase() === q);
     if (exactDisplay) return [exactDisplay];
 
+    // 1b. If formatted like "ग्राम (पंचायत: ...)"
+    if (q.includes('(')) {
+        const vPart = q.split('(')[0].trim();
+        const parenPart = q.slice(q.indexOf('('));
+        const matched = allVillagesIndex.find(v => {
+            return v.village.toLowerCase() === vPart && (parenPart.includes(v.panchayat.toLowerCase()) || parenPart.includes(v.block.toLowerCase()));
+        });
+        if (matched) return [matched];
+    }
+
     // 2. Exact match with village name e.g. "गीदम"
     const exactVillage = allVillagesIndex.filter(v => v.village.toLowerCase() === q);
     if (exactVillage.length > 0) return exactVillage;
@@ -326,11 +374,11 @@ function findVillageMatches(query) {
 }
 
 /**
- * Handle Village Auto-Fill: fills Block and Gram Panchayat automatically
+ * Handle Village input: auto-fills Block and Gram Panchayat if matching village is typed/chosen
  */
-function handleVillageAutoFill(query) {
+function handleVillageInput(query) {
     const statusEl = document.getElementById('autofillStatus');
-    const clearBtn = document.getElementById('clearAutofillBtn');
+    const clearBtn = document.getElementById('clearVillageBtn');
     const rawVal = (query || '').trim();
 
     if (clearBtn) {
@@ -338,6 +386,18 @@ function handleVillageAutoFill(query) {
     }
 
     if (!rawVal) {
+        if (statusEl) {
+            statusEl.style.display = 'none';
+            statusEl.innerHTML = '';
+        }
+        return;
+    }
+
+    const currentBlock = document.getElementById('block') ? document.getElementById('block').value : '';
+    const currentPanchayat = document.getElementById('panchayat') ? document.getElementById('panchayat').value : '';
+
+    // If both block and panchayat are already manually chosen and user is just typing simple village name, don't overwrite
+    if (currentBlock && currentPanchayat && !rawVal.includes('(')) {
         if (statusEl) statusEl.style.display = 'none';
         return;
     }
@@ -345,20 +405,20 @@ function handleVillageAutoFill(query) {
     const matches = findVillageMatches(rawVal);
 
     if (matches.length === 0) {
-        if (statusEl) {
+        if (statusEl && !currentBlock) {
             statusEl.className = 'autofill-status info';
             statusEl.style.display = 'flex';
-            statusEl.innerHTML = `⚠️ <strong>"${escapeHtml(rawVal)}"</strong> नाम का ग्राम लिस्ट में नहीं मिला। आप नीचे ड्रॉपडाउन से ब्लॉक और पंचायत चुन सकते हैं।`;
+            statusEl.innerHTML = `ℹ️ <strong>"${escapeHtml(rawVal)}"</strong> सूची में नहीं मिला। आप ऊपर ब्लॉक व पंचायत चुनकर इसे दर्ज कर सकते हैं।`;
         }
         return;
     }
 
-    // If exactly 1 match, or if user selected a specific option containing "(पंचायत:"
+    // If exactly 1 match or user selected an option with '('
     if (matches.length === 1 || rawVal.includes('(')) {
         const match = matches[0];
         applyLocationAutoFill(match);
     } else if (matches.length > 1) {
-        // Multiple villages with the same name across different Panchayats or Blocks
+        // Multiple villages with same name
         if (statusEl) {
             statusEl.className = 'autofill-status info';
             statusEl.style.display = 'flex';
@@ -373,55 +433,66 @@ function handleVillageAutoFill(query) {
 function applyLocationAutoFill(match) {
     const blockSelect = document.getElementById('block');
     const panchayatSelect = document.getElementById('panchayat');
-    const villageSelect = document.getElementById('village');
+    const villageInput = document.getElementById('village');
     const statusEl = document.getElementById('autofillStatus');
-    const searchInput = document.getElementById('villageSearchInput');
 
-    // 1. Select Block & trigger dependent panchayats
+    // 1. Select Block
     if (blockSelect) {
         blockSelect.value = match.block;
         blockSelect.classList.add('autofill-highlight');
-        setTimeout(() => blockSelect.classList.remove('autofill-highlight'), 1000);
-        handleBlockChange();
+        setTimeout(() => blockSelect.classList.remove('autofill-highlight'), 1200);
+
+        // Populate Panchayats for this Block
+        if (currentConfig.locations && currentConfig.locations[match.block]) {
+            const panchayats = Object.keys(currentConfig.locations[match.block]);
+            let html = '<option value="">-- ग्राम पंचायत चुनें / Select Gram Panchayat --</option>';
+            panchayats.forEach(p => {
+                html += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+            });
+            html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+            if (panchayatSelect) {
+                panchayatSelect.innerHTML = html;
+                panchayatSelect.disabled = false;
+            }
+        }
     }
 
-    // 2. Select Gram Panchayat & trigger dependent villages
+    // 2. Select Gram Panchayat
     if (panchayatSelect) {
         panchayatSelect.value = match.panchayat;
         panchayatSelect.classList.add('autofill-highlight');
-        setTimeout(() => panchayatSelect.classList.remove('autofill-highlight'), 1000);
-        handlePanchayatChange();
+        setTimeout(() => panchayatSelect.classList.remove('autofill-highlight'), 1200);
     }
 
-    // 3. Select Village
-    if (villageSelect) {
-        villageSelect.value = match.village;
-        villageSelect.classList.add('autofill-highlight');
-        setTimeout(() => villageSelect.classList.remove('autofill-highlight'), 1000);
-        handleVillageChange();
+    // 3. Update datalist to only show villages for this Panchayat
+    populateAllVillagesDatalist(match.block, match.panchayat);
+
+    // 4. Set clean village name in input (strips any "(पंचायत: ...)" string)
+    if (villageInput) {
+        villageInput.value = match.village;
+        villageInput.classList.add('autofill-highlight');
+        setTimeout(() => villageInput.classList.remove('autofill-highlight'), 1200);
     }
 
-    // 4. Update status display
+    // 5. Update status display with confirmation
     if (statusEl) {
         statusEl.className = 'autofill-status success';
         statusEl.style.display = 'flex';
-        statusEl.innerHTML = `✓ <strong>स्वतः भर दिया गया:</strong> ब्लॉक: <strong>${escapeHtml(match.block)}</strong> | ग्राम पंचायत: <strong>${escapeHtml(match.panchayat)}</strong> | ग्राम: <strong>${escapeHtml(match.village)}</strong>`;
-    }
-
-    // Clean up input value to simple village display name if user selected the full option
-    if (searchInput && searchInput.value.includes('(')) {
-        searchInput.value = match.village;
+        statusEl.innerHTML = `✓ <strong>स्वतः भर दिया गया:</strong> ब्लॉक: <strong>${escapeHtml(match.block)}</strong> | ग्राम पंचायत: <strong>${escapeHtml(match.panchayat)}</strong>`;
     }
 }
 
 /**
- * Clear the Village Auto-Fill input and reset status
+ * Clear the Village input and reset status
  */
-function clearVillageAutoFill() {
-    const searchInput = document.getElementById('villageSearchInput');
-    const clearBtn = document.getElementById('clearAutofillBtn');
+function clearVillage() {
+    const villageInput = document.getElementById('village');
+    const clearBtn = document.getElementById('clearVillageBtn');
     const statusEl = document.getElementById('autofillStatus');
-    if (searchInput) searchInput.value = '';
+    if (villageInput) {
+        villageInput.value = '';
+        villageInput.focus();
+    }
     if (clearBtn) clearBtn.style.display = 'none';
     if (statusEl) {
         statusEl.style.display = 'none';
@@ -430,19 +501,18 @@ function clearVillageAutoFill() {
 }
 
 /**
- * Handle Block selection -> Populate Gram Panchayats dynamically
+ * Handle Block selection -> Populate Gram Panchayats dynamically (Original Cascading Flow Step 1)
  */
 function handleBlockChange() {
     const blockSelect = document.getElementById('block');
     const panchayatSelect = document.getElementById('panchayat');
-    const villageSelect = document.getElementById('village');
+    const villageInput = document.getElementById('village');
     const panchayatCustom = document.getElementById('panchayatCustom');
-    const villageCustom = document.getElementById('villageCustom');
+    const statusEl = document.getElementById('autofillStatus');
 
     const selectedBlock = blockSelect ? blockSelect.value : '';
 
     if (panchayatCustom) panchayatCustom.style.display = 'none';
-    if (villageCustom) villageCustom.style.display = 'none';
 
     if (!selectedBlock || !currentConfig.locations || !currentConfig.locations[selectedBlock]) {
         if (panchayatSelect) {
@@ -450,11 +520,9 @@ function handleBlockChange() {
             panchayatSelect.disabled = true;
             panchayatSelect.value = '';
         }
-        if (villageSelect) {
-            villageSelect.innerHTML = '<option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>';
-            villageSelect.disabled = true;
-            villageSelect.value = '';
-        }
+        // Reset datalist to district-wide
+        populateAllVillagesDatalist(null, null);
+        if (statusEl) statusEl.style.display = 'none';
         return;
     }
 
@@ -472,23 +540,29 @@ function handleBlockChange() {
         panchayatSelect.value = '';
     }
 
-    // Reset Village dropdown until Panchayat is chosen
-    if (villageSelect) {
-        villageSelect.innerHTML = '<option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>';
-        villageSelect.disabled = true;
-        villageSelect.value = '';
+    // Filter village datalist to this block
+    populateAllVillagesDatalist(selectedBlock, null);
+
+    // If current village doesn't belong to this block, clear it
+    if (villageInput && villageInput.value) {
+        const vClean = villageInput.value.split('(')[0].trim();
+        const belongs = allVillagesIndex.some(v => v.village.toLowerCase() === vClean.toLowerCase() && v.block.toLowerCase() === selectedBlock.toLowerCase());
+        if (!belongs) {
+            villageInput.value = '';
+            if (statusEl) statusEl.style.display = 'none';
+        }
     }
 }
 
 /**
- * Handle Gram Panchayat selection -> Populate Villages dynamically
+ * Handle Gram Panchayat selection -> Populate Villages dynamically (Original Cascading Flow Step 2)
  */
 function handlePanchayatChange() {
     const blockSelect = document.getElementById('block');
     const panchayatSelect = document.getElementById('panchayat');
-    const villageSelect = document.getElementById('village');
+    const villageInput = document.getElementById('village');
     const panchayatCustom = document.getElementById('panchayatCustom');
-    const villageCustom = document.getElementById('villageCustom');
+    const statusEl = document.getElementById('autofillStatus');
 
     const selectedBlock = blockSelect ? blockSelect.value : '';
     const selectedPanchayat = panchayatSelect ? panchayatSelect.value : '';
@@ -499,15 +573,7 @@ function handlePanchayatChange() {
             panchayatCustom.required = true;
             panchayatCustom.focus();
         }
-        if (villageSelect) {
-            villageSelect.innerHTML = '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
-            villageSelect.disabled = false;
-            villageSelect.value = '__OTHER__';
-        }
-        if (villageCustom) {
-            villageCustom.style.display = 'block';
-            villageCustom.required = true;
-        }
+        populateAllVillagesDatalist(null, null);
         return;
     }
 
@@ -516,55 +582,27 @@ function handlePanchayatChange() {
         panchayatCustom.required = false;
         panchayatCustom.value = '';
     }
-    if (villageCustom) {
-        villageCustom.style.display = 'none';
-        villageCustom.required = false;
-        villageCustom.value = '';
-    }
 
     if (!selectedPanchayat || !currentConfig.locations || !currentConfig.locations[selectedBlock] || !currentConfig.locations[selectedBlock][selectedPanchayat]) {
-        if (villageSelect) {
-            villageSelect.innerHTML = '<option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>';
-            villageSelect.disabled = true;
-            villageSelect.value = '';
-        }
+        populateAllVillagesDatalist(selectedBlock, null);
         return;
     }
 
-    // Populate Villages under selected Gram Panchayat
-    const villages = currentConfig.locations[selectedBlock][selectedPanchayat] || [];
-    let html = '<option value="">-- ग्राम चुनें / Select Village --</option>';
-    villages.forEach(v => {
-        html += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`;
-    });
-    html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+    // Populate datalist with only villages under this specific Panchayat!
+    populateAllVillagesDatalist(selectedBlock, selectedPanchayat);
 
-    if (villageSelect) {
-        villageSelect.innerHTML = html;
-        villageSelect.disabled = false;
-        villageSelect.value = '';
+    // If current village doesn't belong to this panchayat, clear it
+    if (villageInput && villageInput.value) {
+        const vClean = villageInput.value.split('(')[0].trim();
+        const villagesInGP = currentConfig.locations[selectedBlock][selectedPanchayat] || [];
+        const belongs = villagesInGP.some(v => v.toLowerCase() === vClean.toLowerCase());
+        if (!belongs) {
+            villageInput.value = '';
+        }
     }
-}
 
-/**
- * Handle Village selection
- */
-function handleVillageChange() {
-    const villageSelect = document.getElementById('village');
-    const villageCustom = document.getElementById('villageCustom');
-
-    if (villageSelect && villageSelect.value === '__OTHER__') {
-        if (villageCustom) {
-            villageCustom.style.display = 'block';
-            villageCustom.required = true;
-            villageCustom.focus();
-        }
-    } else {
-        if (villageCustom) {
-            villageCustom.style.display = 'none';
-            villageCustom.required = false;
-            villageCustom.value = '';
-        }
+    if (statusEl) {
+        statusEl.style.display = 'none';
     }
 }
 
@@ -588,27 +626,27 @@ function setupEventListeners() {
         form.addEventListener('submit', handleFormSubmit);
         form.addEventListener('reset', () => {
             setTimeout(() => {
-                clearVillageAutoFill();
+                clearVillage();
                 handleBlockChange();
                 setDefaultDate();
             }, 20);
         });
     }
 
-    // Village Quick Search & Reverse Auto-Fill Input
-    const villageSearchInput = document.getElementById('villageSearchInput');
-    if (villageSearchInput) {
-        villageSearchInput.addEventListener('input', (e) => {
-            handleVillageAutoFill(e.target.value);
+    // Village Input & Reverse Auto-Fill Listener
+    const villageInput = document.getElementById('village');
+    if (villageInput) {
+        villageInput.addEventListener('input', (e) => {
+            handleVillageInput(e.target.value);
         });
-        villageSearchInput.addEventListener('change', (e) => {
-            handleVillageAutoFill(e.target.value);
+        villageInput.addEventListener('change', (e) => {
+            handleVillageInput(e.target.value);
         });
     }
 
-    const clearAutofillBtn = document.getElementById('clearAutofillBtn');
-    if (clearAutofillBtn) {
-        clearAutofillBtn.addEventListener('click', clearVillageAutoFill);
+    const clearVillageBtn = document.getElementById('clearVillageBtn');
+    if (clearVillageBtn) {
+        clearVillageBtn.addEventListener('click', clearVillage);
     }
 
     // Cascading Location Dropdown Listeners
@@ -620,11 +658,6 @@ function setupEventListeners() {
     const panchayatSelect = document.getElementById('panchayat');
     if (panchayatSelect) {
         panchayatSelect.addEventListener('change', handlePanchayatChange);
-    }
-
-    const villageSelect = document.getElementById('village');
-    if (villageSelect) {
-        villageSelect.addEventListener('change', handleVillageChange);
     }
 
     // Refresh Locations directly from Google Sheet button
@@ -776,11 +809,11 @@ async function handleFormSubmit(e) {
         ? (panchayatCustom ? panchayatCustom.value.trim() : '')
         : (panchayatSelect ? panchayatSelect.value.trim() : '');
 
-    const villageSelect = document.getElementById('village');
-    const villageCustom = document.getElementById('villageCustom');
-    const villageVal = (villageSelect && villageSelect.value === '__OTHER__')
-        ? (villageCustom ? villageCustom.value.trim() : '')
-        : (villageSelect ? villageSelect.value.trim() : '');
+    const villageInput = document.getElementById('village');
+    let villageVal = (villageInput ? villageInput.value.trim() : '');
+    if (villageVal.includes('(')) {
+        villageVal = villageVal.split('(')[0].trim();
+    }
 
     const phoneVal = (document.getElementById('phone').value || '').trim();
     const aadharVal = (document.getElementById('aadhar').value || '').trim();
@@ -806,10 +839,8 @@ async function handleFormSubmit(e) {
 
     if (!villageVal) {
         alert('⚠️ कृपया ग्राम का चयन करें या दर्ज करें।\nPlease select or enter Village name.');
-        if (villageSelect && villageSelect.value === '__OTHER__' && villageCustom) {
-            villageCustom.focus();
-        } else if (villageSelect) {
-            villageSelect.focus();
+        if (villageInput) {
+            villageInput.focus();
         }
         return;
     }

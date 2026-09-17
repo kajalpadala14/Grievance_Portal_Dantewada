@@ -191,23 +191,6 @@
                     <!-- Address Information Section -->
                     <div class="section-title">📍 पता जानकारी | Address Information</div>
 
-                    <!-- Quick Village Auto-fill Box -->
-                    <div class="village-autofill-box">
-                        <div class="autofill-header">
-                            <label for="villageSearchInput" class="autofill-label">
-                                ⚡ गाँव के नाम से खोजें (ब्लॉक व पंचायत स्वतः भर जाएंगे) | Quick Search Village (Auto-fill Block & GP):
-                            </label>
-                            <span class="autofill-badge">ऑटो-फिल / Auto-Fill</span>
-                        </div>
-                        <div class="autofill-input-wrap">
-                            <span class="autofill-icon">🔍</span>
-                            <input type="text" id="villageSearchInput" list="allVillagesDatalist" placeholder="यहाँ गाँव का नाम लिखें... (उदा. गीदम, कटेकल्याण, कुआकोंडा)" autocomplete="off">
-                            <button type="button" class="btn-clear-autofill" id="clearAutofillBtn" style="display: none;" title="साफ करें | Clear">✕</button>
-                        </div>
-                        <datalist id="allVillagesDatalist"></datalist>
-                        <div class="autofill-status" id="autofillStatus" style="display: none;"></div>
-                    </div>
-
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="block" class="required">ब्लॉक | Block</label>
@@ -227,11 +210,16 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="village" class="required">ग्राम | Village</label>
-                            <select id="village" name="village" required disabled>
-                                <option value="">-- पहले ग्राम पंचायत चुनें / Select Panchayat First --</option>
-                            </select>
-                            <input type="text" id="villageCustom" name="villageCustom" placeholder="ग्राम का नाम लिखें / Enter Village Name" style="display: none; margin-top: 8px;">
+                            <div class="field-header-row">
+                                <label for="village" class="required">ग्राम | Village</label>
+                                <span class="village-badge" title="गाँव का नाम लिखते ही ब्लॉक व पंचायत स्वतः भर जाएंगे">⚡ ऑटो-फिल / Auto-Fill</span>
+                            </div>
+                            <div class="village-input-wrap">
+                                <input type="text" id="village" name="village" list="allVillagesDatalist" placeholder="गाँव का नाम लिखें या चुनें (ब्लॉक व पंचायत स्वतः भर जाएंगे)" required autocomplete="off">
+                                <button type="button" class="btn-clear-village" id="clearVillageBtn" style="display: none;" title="साफ करें | Clear">✕</button>
+                            </div>
+                            <datalist id="allVillagesDatalist"></datalist>
+                            <div class="autofill-status" id="autofillStatus" style="display: none;"></div>
                         </div>
                         <div class="form-group">
                             <label for="email">ईमेल | Email</label>
