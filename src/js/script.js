@@ -466,12 +466,12 @@ function applyLocationAutoFill(match) {
 /**
  * Clear the Village input and reset status
  */
-function clearVillage() {
+function clearVillage(shouldFocus = true) {
     const villageInput = document.getElementById('village');
     const clearBtn = document.getElementById('clearVillageBtn');
     if (villageInput) {
         villageInput.value = '';
-        villageInput.focus();
+        if (shouldFocus) villageInput.focus();
     }
     if (clearBtn) clearBtn.style.display = 'none';
 }
@@ -633,6 +633,26 @@ function updateEnrollmentCounter() {
 }
 
 /**
+ * Fully reset and refresh the Grievance Form back to initial pristine state
+ */
+function resetGrievanceForm() {
+    const form = document.getElementById('grievanceForm');
+    if (form) {
+        form.reset();
+    }
+    clearVillage(false);
+    handleBlockChange();
+    setDefaultDate();
+    updateEnrollmentCounter();
+
+    // Reset status radio to first status option
+    const firstStatusRadio = document.querySelector('input[name="status"]');
+    if (firstStatusRadio) {
+        firstStatusRadio.checked = true;
+    }
+}
+
+/**
  * Setup DOM event listeners
  */
 function setupEventListeners() {
@@ -641,10 +661,10 @@ function setupEventListeners() {
         form.addEventListener('submit', handleFormSubmit);
         form.addEventListener('reset', () => {
             setTimeout(() => {
-                clearVillage();
-                handleBlockChange();
-                setDefaultDate();
-                updateEnrollmentCounter();
+                resetGrievanceForm();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const applicantName = document.getElementById('applicantName');
+                if (applicantName) applicantName.focus();
             }, 20);
         });
     }
@@ -662,7 +682,7 @@ function setupEventListeners() {
 
     const clearVillageBtn = document.getElementById('clearVillageBtn');
     if (clearVillageBtn) {
-        clearVillageBtn.addEventListener('click', clearVillage);
+        clearVillageBtn.addEventListener('click', () => clearVillage(true));
     }
 
     // Cascading Location Dropdown Listeners
@@ -930,10 +950,12 @@ async function handleFormSubmit(e) {
         showSubmissionFeedback(result.syncedToSheet, result.error);
         openSubmissionModal(grievance, result.syncedToSheet);
 
-        document.getElementById('grievanceForm').reset();
-        handleBlockChange();
-        setDefaultDate();
-        updateEnrollmentCounter();
+        // Completely reset and refresh the form
+        resetGrievanceForm();
+
+        // Scroll smoothly to the very top of the page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
         updateDashboard();
         displayGrievances();
 
@@ -991,6 +1013,12 @@ function closeSubmissionModal() {
     const modal = document.getElementById('submissionModal');
     if (modal) {
         modal.classList.remove('show');
+    }
+    // Scroll smoothly to the very top of the page and focus the first input
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const applicantName = document.getElementById('applicantName');
+    if (applicantName) {
+        setTimeout(() => applicantName.focus(), 150);
     }
 }
 
