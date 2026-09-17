@@ -975,6 +975,14 @@ textarea {
     box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
 }
 
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+    pointer-events: none;
+}
+
 .btn-reset {
     background: var(--slate-100);
     color: var(--slate-700);

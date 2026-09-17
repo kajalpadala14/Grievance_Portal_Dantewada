@@ -7,6 +7,7 @@ let currentConfig = DEFAULT_CONFIG;
 let grievances = [];
 let searchQuery = '';
 let statusFilterQuery = '';
+let isSubmittingGrievance = false;
 
 /**
  * Theme Management (Light / Dark Mode)
@@ -466,7 +467,7 @@ function applyLocationAutoFill(match) {
 /**
  * Clear the Village input and reset status
  */
-function clearVillage(shouldFocus = true) {
+function clearVillage(shouldFocus = false) {
     const villageInput = document.getElementById('village');
     const clearBtn = document.getElementById('clearVillageBtn');
     if (villageInput) {
@@ -839,6 +840,11 @@ export function switchTab(tabIndex) {
 async function handleFormSubmit(e) {
     e.preventDefault();
 
+    // Prevent duplicate submissions / rapid multiple clicks
+    if (isSubmittingGrievance) {
+        return;
+    }
+
     const submitBtn = document.querySelector('.btn-submit');
     const originalBtnText = submitBtn ? submitBtn.innerHTML : '✓ जमा करें | SUBMIT';
 
@@ -914,9 +920,12 @@ async function handleFormSubmit(e) {
         return;
     }
     
+    // Lock submission flag & disable submit button immediately
+    isSubmittingGrievance = true;
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '⏳ जमा हो रहा है... | Submitting...';
+        submitBtn.style.pointerEvents = 'none';
+        submitBtn.innerHTML = '⏳ जमा हो रहा है... कृपया प्रतीक्षा करें | Submitting...';
     }
 
     const selectedStatus = document.querySelector('input[name="status"]:checked');
@@ -953,8 +962,10 @@ async function handleFormSubmit(e) {
         // Completely reset and refresh the form
         resetGrievanceForm();
 
-        // Scroll smoothly to the very top of the page
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll page immediately to top so user sees the fresh new form from top
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
 
         updateDashboard();
         displayGrievances();
@@ -972,8 +983,13 @@ async function handleFormSubmit(e) {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
+            submitBtn.style.pointerEvents = '';
             submitBtn.innerHTML = originalBtnText;
         }
+        // Cooldown timer to prevent rapid duplicate clicks
+        setTimeout(() => {
+            isSubmittingGrievance = false;
+        }, 1200);
     }
 }
 
@@ -1015,7 +1031,10 @@ function closeSubmissionModal() {
         modal.classList.remove('show');
     }
     // Scroll smoothly to the very top of the page and focus the first input
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
     const applicantName = document.getElementById('applicantName');
     if (applicantName) {
         setTimeout(() => applicantName.focus(), 150);
