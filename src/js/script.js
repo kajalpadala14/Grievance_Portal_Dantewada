@@ -317,7 +317,7 @@ function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null)
             html += `<option value="${escapeHtml(item.village)}"></option>`;
         });
         if (villageInput && (!villageInput.value || !filterPanchayat)) {
-            villageInput.placeholder = `गाँव का नाम चुनें या लिखें (उदा. ${sorted.slice(0, 2).map(s => s.village).join(', ')}...)`;
+            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
         }
     } else if (filterBlock && filterBlock !== '__OTHER__') {
         // Block is known -> show village + panchayat
@@ -325,7 +325,7 @@ function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null)
             html += `<option value="${escapeHtml(item.village)} (पंचायत: ${escapeHtml(item.panchayat)})">${escapeHtml(item.village)}</option>`;
         });
         if (villageInput && !villageInput.value) {
-            villageInput.placeholder = `गाँव का नाम लिखें या चुनें (ब्लॉक ${filterBlock} के अंतर्गत)`;
+            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
         }
     } else {
         // District-wide -> show village + panchayat + block
@@ -333,7 +333,7 @@ function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null)
             html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
         });
         if (villageInput && !villageInput.value) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें (ब्लॉक व पंचायत स्वतः भर जाएंगे)';
+            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
         }
     }
 
