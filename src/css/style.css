@@ -673,29 +673,7 @@ body {
     grid-template-columns: 1fr;
 }
 
-/* Village Field with Auto-fill Styles */
-.field-header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 6px;
-}
-
-.field-header-row label {
-    margin-bottom: 0;
-}
-
-.village-badge {
-    font-size: 11px;
-    font-weight: 700;
-    background: #dbeafe;
-    color: #1d4ed8;
-    border: 1px solid #93c5fd;
-    padding: 2px 8px;
-    border-radius: var(--radius-full);
-    letter-spacing: 0.03em;
-}
+/* Village Field Styles */
 
 .village-input-wrap {
     position: relative;
@@ -1586,11 +1564,6 @@ textarea {
     background: #131d31;
     border-left-color: var(--primary);
     color: #f8fafc;
-}
-[data-theme="dark"] .village-badge {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-    border-color: rgba(96, 165, 250, 0.4);
 }
 
 [data-theme="dark"] .btn-clear-village {
