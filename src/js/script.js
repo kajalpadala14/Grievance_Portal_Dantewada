@@ -579,6 +579,46 @@ function setDefaultDate() {
 }
 
 /**
+ * Live digit counter for Enrollment Number (max 28 digits)
+ */
+function updateEnrollmentCounter() {
+    const enrollmentInput = document.getElementById('enrollment');
+    const enrollmentCounter = document.getElementById('enrollmentCounter');
+    const enrollmentHint = document.getElementById('enrollmentHint');
+
+    if (!enrollmentInput) return;
+    const count = (enrollmentInput.value || '').length;
+
+    if (enrollmentCounter) {
+        enrollmentCounter.classList.remove('count-zero', 'count-partial', 'count-complete');
+        if (count === 0) {
+            enrollmentCounter.textContent = '0 / 28 अंक';
+            enrollmentCounter.classList.add('count-zero');
+        } else if (count < 28) {
+            enrollmentCounter.textContent = `${count} / 28 अंक (${28 - count} शेष)`;
+            enrollmentCounter.classList.add('count-partial');
+        } else {
+            enrollmentCounter.textContent = '✓ 28 / 28 अंक पूर्ण';
+            enrollmentCounter.classList.add('count-complete');
+        }
+    }
+
+    if (enrollmentHint) {
+        enrollmentHint.classList.remove('hint-zero', 'hint-partial', 'hint-complete');
+        if (count === 0) {
+            enrollmentHint.innerHTML = '28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)';
+            enrollmentHint.classList.add('hint-zero');
+        } else if (count < 28) {
+            enrollmentHint.innerHTML = `दर्ज किए गए अंक: <strong>${count}</strong> / 28 (अभी <strong>${28 - count}</strong> अंक और भरने हैं)`;
+            enrollmentHint.classList.add('hint-partial');
+        } else {
+            enrollmentHint.innerHTML = '✓ <strong>28 अंक पूरे हो चुके हैं</strong> | Enrollment number is complete';
+            enrollmentHint.classList.add('hint-complete');
+        }
+    }
+}
+
+/**
  * Setup DOM event listeners
  */
 function setupEventListeners() {
@@ -590,6 +630,7 @@ function setupEventListeners() {
                 clearVillage();
                 handleBlockChange();
                 setDefaultDate();
+                updateEnrollmentCounter();
             }, 20);
         });
     }
@@ -663,13 +704,18 @@ function setupEventListeners() {
         });
     }
 
-    // 3. Enrollment number: numbers only, max 28 digits
+    // 3. Enrollment number: numbers only, max 28 digits with live digit counter
     const enrollmentInput = document.getElementById('enrollment');
     if (enrollmentInput) {
         enrollmentInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 28);
+            updateEnrollmentCounter();
+        });
+        enrollmentInput.addEventListener('paste', () => {
+            setTimeout(updateEnrollmentCounter, 10);
         });
     }
+    updateEnrollmentCounter();
 
     // 4. Modal handlers
     const closeModalBtn = document.getElementById('closeModalBtn');
@@ -873,6 +919,7 @@ async function handleFormSubmit(e) {
         document.getElementById('grievanceForm').reset();
         handleBlockChange();
         setDefaultDate();
+        updateEnrollmentCounter();
         updateDashboard();
         displayGrievances();
 

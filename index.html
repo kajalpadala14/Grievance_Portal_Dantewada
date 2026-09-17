@@ -232,8 +232,12 @@
                             <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" inputmode="numeric">
                         </div>
                         <div class="form-group">
-                            <label for="enrollment">एनरोलमेंट नंबर | Enrollment Number (28 अंक)</label>
+                            <div class="field-header-row">
+                                <label for="enrollment">एनरोलमेंट नंबर | Enrollment Number (28 अंक)</label>
+                                <span class="digit-counter count-zero" id="enrollmentCounter" title="दर्ज किए गए अंक / Entered digits">0 / 28 अंक</span>
+                            </div>
                             <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[0-9]{28}" placeholder="28 अंकों का एनरोलमेंट नंबर" inputmode="numeric">
+                            <small class="digit-count-hint hint-zero" id="enrollmentHint">28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)</small>
                         </div>
                     </div>
 
