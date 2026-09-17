@@ -49,7 +49,7 @@ export const TRANSLATIONS = {
     secRemarks: "💬 टिप्पणियां",
 
     // Form Labels
-    lblApplicantName: "हितग्राhi / आवेदक का नाम",
+    lblApplicantName: "हितग्राही / आवेदक का नाम",
     lblApplicantNameReq: "हितग्राही / आवेदक का नाम",
     lblFatherName: "पिता/पति का नाम",
     lblAge: "आयु",
