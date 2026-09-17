@@ -240,8 +240,16 @@
                         <div class="form-group">
                             <label for="village" class="required" data-i18n="lblVillage">ग्राम</label>
                             <div class="village-input-wrap">
-                                <input type="text" id="village" name="village" list="allVillagesDatalist" placeholder="गाँव का नाम लिखें या चुनें" data-i18n-ph="phVillage" required autocomplete="off">
-                                <button type="button" class="btn-clear-village" id="clearVillageBtn" style="display: none;" title="साफ करें | Clear">✕</button>
+                                <input type="text" id="village" name="village" placeholder="गाँव का नाम लिखें या चुनें" data-i18n-ph="phVillage" required autocomplete="off">
+                                <div class="village-input-actions">
+                                    <button type="button" class="btn-clear-village" id="clearVillageBtn" style="display: none;" title="साफ करें | Clear">✕</button>
+                                    <button type="button" class="btn-toggle-village-dropdown" id="toggleVillageDropdownBtn" title="गाँव की सूची देखें | View Village List" tabindex="-1">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="village-dropdown-menu" id="villageDropdownMenu" role="listbox" style="display: none;"></div>
                             </div>
                             <datalist id="allVillagesDatalist"></datalist>
                         </div>

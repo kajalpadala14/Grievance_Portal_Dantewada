@@ -412,18 +412,10 @@ function buildVillagesIndex(locations) {
 }
 
 /**
- * Populate the <datalist id="allVillagesDatalist">
- * Supports optional filtering by Block and/or Gram Panchayat
+ * Get available villages based on selected Block and Panchayat
  */
-function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null) {
-    const datalist = document.getElementById('allVillagesDatalist');
-    const villageInput = document.getElementById('village');
-    if (!datalist) return;
-
-    if (allVillagesIndex.length === 0) {
-        datalist.innerHTML = '';
-        return;
-    }
+function getAvailableVillages(filterBlock = null, filterPanchayat = null) {
+    if (allVillagesIndex.length === 0) return [];
 
     let items = allVillagesIndex;
 
@@ -449,7 +441,7 @@ function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null)
     const seen = new Set();
     const uniqueItems = [];
     for (const item of items) {
-        const key = `${item.village}|${item.panchayat}|${item.block}`;
+        const key = filterPanchayat ? item.village.toLowerCase() : `${item.village}|${item.panchayat}`.toLowerCase();
         if (!seen.has(key)) {
             seen.add(key);
             uniqueItems.push(item);
@@ -470,38 +462,203 @@ function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null)
         return a.village.localeCompare(b.village, 'hi');
     });
 
-    let html = '';
-    if (filterPanchayat && filterPanchayat !== '__OTHER__') {
-        // Panchayat is already known -> show only unique village names
-        const seenV = new Set();
-        sorted.forEach(item => {
-            if (!seenV.has(item.village)) {
-                seenV.add(item.village);
-                html += `<option value="${escapeHtml(item.village)}"></option>`;
-            }
+    return sorted;
+}
+
+let activeVillageItemIndex = -1;
+
+/**
+ * Render items in the custom interactive village dropdown menu
+ */
+function renderVillageDropdownMenu(query = '') {
+    const menu = document.getElementById('villageDropdownMenu');
+    const villageInput = document.getElementById('village');
+    const toggleBtn = document.getElementById('toggleVillageDropdownBtn');
+    if (!menu || !villageInput) return;
+
+    const currentBlock = document.getElementById('block') ? document.getElementById('block').value : '';
+    const currentPanchayat = document.getElementById('panchayat') ? document.getElementById('panchayat').value : '';
+
+    const available = getAvailableVillages(currentBlock, currentPanchayat);
+    const q = (query || '').trim().toLowerCase();
+
+    let filtered = available;
+    if (q) {
+        filtered = available.filter(item => {
+            return item.village.toLowerCase().includes(q) ||
+                   (item.panchayat && item.panchayat.toLowerCase().includes(q)) ||
+                   (item.block && item.block.toLowerCase().includes(q));
         });
-        if (villageInput && (!villageInput.value || !filterPanchayat)) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
-        }
-    } else if (filterBlock && filterBlock !== '__OTHER__') {
-        // Block is known -> show village + panchayat
-        sorted.forEach(item => {
-            html += `<option value="${escapeHtml(item.village)} (पंचायत: ${escapeHtml(item.panchayat)})">${escapeHtml(item.village)}</option>`;
-        });
-        if (villageInput && !villageInput.value) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
-        }
-    } else {
-        // District-wide -> show village + panchayat + block
-        sorted.forEach(item => {
-            html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
-        });
-        if (villageInput && !villageInput.value) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
-        }
     }
 
-    datalist.innerHTML = html;
+    if (filtered.length === 0) {
+        menu.innerHTML = `
+            <div class="village-dropdown-empty">
+                <span>"${escapeHtml(query)}" से मेल खाता कोई गाँव नहीं मिला</span>
+                <div style="font-size:0.75rem; color:#94a3b8; margin-top:3px;">(आप इस नाम को सीधे दर्ज कर सकते हैं)</div>
+            </div>
+        `;
+        menu.style.display = 'block';
+        if (toggleBtn) toggleBtn.classList.add('open');
+        activeVillageItemIndex = -1;
+        return;
+    }
+
+    let html = '';
+    const currentVal = villageInput.value.trim().toLowerCase();
+
+    filtered.forEach((item, index) => {
+        const isSelected = item.village.toLowerCase() === currentVal;
+        const selectedClass = isSelected ? ' selected' : '';
+
+        let subText = '';
+        if (!currentPanchayat && item.panchayat) {
+            subText = `<span class="village-item-sub">पं: ${escapeHtml(item.panchayat)}</span>`;
+        } else if (!currentBlock && item.block) {
+            subText = `<span class="village-item-sub">${escapeHtml(item.panchayat)}, ${escapeHtml(item.block)}</span>`;
+        }
+
+        html += `
+            <div class="village-dropdown-item${selectedClass}" 
+                 data-village="${escapeHtml(item.village)}" 
+                 data-panchayat="${escapeHtml(item.panchayat)}" 
+                 data-block="${escapeHtml(item.block)}"
+                 data-index="${index}"
+                 role="option"
+                 aria-selected="${isSelected}">
+                <span class="village-item-main">${escapeHtml(item.village)}</span>
+                ${subText}
+            </div>
+        `;
+    });
+
+    menu.innerHTML = html;
+    menu.style.display = 'block';
+    if (toggleBtn) toggleBtn.classList.add('open');
+    activeVillageItemIndex = -1;
+
+    // Attach mousedown handlers so click doesn't blur input before selecting
+    const items = menu.querySelectorAll('.village-dropdown-item');
+    items.forEach(el => {
+        el.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            selectVillageFromDropdown(el.dataset.village, el.dataset.panchayat, el.dataset.block);
+        });
+    });
+}
+
+function openVillageDropdown(query = '') {
+    renderVillageDropdownMenu(query);
+}
+
+function closeVillageDropdown() {
+    const menu = document.getElementById('villageDropdownMenu');
+    const toggleBtn = document.getElementById('toggleVillageDropdownBtn');
+    if (menu) menu.style.display = 'none';
+    if (toggleBtn) toggleBtn.classList.remove('open');
+    activeVillageItemIndex = -1;
+}
+
+function toggleVillageDropdown() {
+    const menu = document.getElementById('villageDropdownMenu');
+    const isOpen = menu && menu.style.display === 'block';
+    if (isOpen) {
+        closeVillageDropdown();
+    } else {
+        const villageInput = document.getElementById('village');
+        if (villageInput) villageInput.focus();
+        openVillageDropdown('');
+    }
+}
+
+function selectVillageFromDropdown(village, panchayat, block) {
+    const villageInput = document.getElementById('village');
+    const blockSelect = document.getElementById('block');
+    const panchayatSelect = document.getElementById('panchayat');
+
+    if (!villageInput) return;
+
+    villageInput.value = village;
+    closeVillageDropdown();
+
+    const clearBtn = document.getElementById('clearVillageBtn');
+    if (clearBtn) clearBtn.style.display = 'flex';
+
+    // Auto-fill block and panchayat if not already selected
+    const currentBlock = blockSelect ? blockSelect.value : '';
+    const currentPanchayat = panchayatSelect ? panchayatSelect.value : '';
+
+    if (!currentBlock || !currentPanchayat) {
+        applyLocationAutoFill({
+            village: village,
+            panchayat: panchayat,
+            block: block
+        });
+    }
+
+    villageInput.classList.add('autofill-highlight');
+    setTimeout(() => villageInput.classList.remove('autofill-highlight'), 800);
+
+    villageInput.dispatchEvent(new Event('input', { bubbles: true }));
+    villageInput.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function updateActiveVillageItem(items) {
+    items.forEach((el, idx) => {
+        if (idx === activeVillageItemIndex) {
+            el.classList.add('active');
+            el.scrollIntoView({ block: 'nearest' });
+        } else {
+            el.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Populate the <datalist id="allVillagesDatalist">
+ * Supports optional filtering by Block and/or Gram Panchayat
+ */
+function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null) {
+    const datalist = document.getElementById('allVillagesDatalist');
+    const villageInput = document.getElementById('village');
+    const sorted = getAvailableVillages(filterBlock, filterPanchayat);
+
+    if (datalist) {
+        let html = '';
+        if (filterPanchayat && filterPanchayat !== '__OTHER__') {
+            const seenV = new Set();
+            sorted.forEach(item => {
+                if (!seenV.has(item.village)) {
+                    seenV.add(item.village);
+                    html += `<option value="${escapeHtml(item.village)}"></option>`;
+                }
+            });
+            if (villageInput && (!villageInput.value || !filterPanchayat)) {
+                villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
+            }
+        } else if (filterBlock && filterBlock !== '__OTHER__') {
+            sorted.forEach(item => {
+                html += `<option value="${escapeHtml(item.village)} (पंचायत: ${escapeHtml(item.panchayat)})">${escapeHtml(item.village)}</option>`;
+            });
+            if (villageInput && !villageInput.value) {
+                villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
+            }
+        } else {
+            sorted.forEach(item => {
+                html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
+            });
+            if (villageInput && !villageInput.value) {
+                villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
+            }
+        }
+        datalist.innerHTML = html;
+    }
+
+    // Also refresh custom dropdown if currently open
+    const menu = document.getElementById('villageDropdownMenu');
+    if (menu && menu.style.display === 'block') {
+        renderVillageDropdownMenu(villageInput ? villageInput.value : '');
+    }
 }
 
 /**
@@ -685,6 +842,9 @@ function applyLocationAutoFill(match) {
         villageInput.classList.add('autofill-highlight');
         setTimeout(() => villageInput.classList.remove('autofill-highlight'), 1200);
     }
+    closeVillageDropdown();
+    const clearBtn = document.getElementById('clearVillageBtn');
+    if (clearBtn) clearBtn.style.display = 'flex';
 }
 
 /**
@@ -695,7 +855,12 @@ function clearVillage(shouldFocus = false) {
     const clearBtn = document.getElementById('clearVillageBtn');
     if (villageInput) {
         villageInput.value = '';
-        if (shouldFocus) villageInput.focus();
+        if (shouldFocus) {
+            villageInput.focus();
+            openVillageDropdown('');
+        } else {
+            closeVillageDropdown();
+        }
     }
     if (clearBtn) clearBtn.style.display = 'none';
 }
@@ -763,6 +928,8 @@ function handleBlockChange() {
         });
         if (!belongs) {
             villageInput.value = '';
+            const clearBtn = document.getElementById('clearVillageBtn');
+            if (clearBtn) clearBtn.style.display = 'none';
         }
     }
 }
@@ -829,6 +996,8 @@ function handlePanchayatChange() {
         const belongs = gpVillages.some(v => v.toLowerCase() === vClean);
         if (!belongs) {
             villageInput.value = '';
+            const clearBtn = document.getElementById('clearVillageBtn');
+            if (clearBtn) clearBtn.style.display = 'none';
         }
     }
 }
@@ -1079,16 +1248,86 @@ function setupEventListeners() {
         });
     }
 
-    // Village Input & Reverse Auto-Fill Listener
+    // Village Input & Interactive Dropdown Listeners
     const villageInput = document.getElementById('village');
+    const toggleVillageBtn = document.getElementById('toggleVillageDropdownBtn');
+
     if (villageInput) {
         villageInput.addEventListener('input', (e) => {
             handleVillageInput(e.target.value);
+            openVillageDropdown(e.target.value);
         });
+
         villageInput.addEventListener('change', (e) => {
             handleVillageInput(e.target.value);
         });
+
+        villageInput.addEventListener('focus', () => {
+            openVillageDropdown(villageInput.value);
+        });
+
+        villageInput.addEventListener('click', () => {
+            openVillageDropdown(villageInput.value);
+        });
+
+        villageInput.addEventListener('cut', () => {
+            setTimeout(() => {
+                handleVillageInput(villageInput.value);
+                openVillageDropdown('');
+            }, 10);
+        });
+
+        villageInput.addEventListener('keydown', (e) => {
+            const menu = document.getElementById('villageDropdownMenu');
+            const isMenuOpen = menu && menu.style.display === 'block';
+
+            if (!isMenuOpen) {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    openVillageDropdown('');
+                    return;
+                }
+            }
+
+            if (!menu || menu.style.display !== 'block') return;
+            const items = menu.querySelectorAll('.village-dropdown-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeVillageItemIndex = (activeVillageItemIndex + 1) % items.length;
+                updateActiveVillageItem(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeVillageItemIndex = (activeVillageItemIndex - 1 + items.length) % items.length;
+                updateActiveVillageItem(items);
+            } else if (e.key === 'Enter') {
+                if (activeVillageItemIndex >= 0 && activeVillageItemIndex < items.length) {
+                    e.preventDefault();
+                    const el = items[activeVillageItemIndex];
+                    selectVillageFromDropdown(el.dataset.village, el.dataset.panchayat, el.dataset.block);
+                }
+            } else if (e.key === 'Escape') {
+                closeVillageDropdown();
+            }
+        });
     }
+
+    if (toggleVillageBtn) {
+        toggleVillageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleVillageDropdown();
+        });
+    }
+
+    // Close village dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const wrap = document.querySelector('.village-input-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+            closeVillageDropdown();
+        }
+    });
 
     const clearVillageBtn = document.getElementById('clearVillageBtn');
     if (clearVillageBtn) {
