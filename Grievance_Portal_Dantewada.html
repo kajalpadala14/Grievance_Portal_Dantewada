@@ -6,6 +6,61 @@
     <title>Aadhaar शिकायत पोर्टल - दक्षिण बस्तर दंतेवाडा</title>
     <!-- External CSS -->
     <link rel="stylesheet" href="src/css/style.css">
+    <!-- Immediate Theme Initialization & Toggle Handler -->
+    <script>
+        var THEME_KEY = 'dantewada_portal_theme';
+
+        function getStoredTheme() {
+            try {
+                // Clear any old keys from previous test sessions
+                if (localStorage.getItem('portal-theme')) {
+                    localStorage.removeItem('portal-theme');
+                }
+                var saved = localStorage.getItem(THEME_KEY);
+                if (saved === 'dark' || saved === 'light') return saved;
+            } catch (e) {}
+            return 'light'; // Default is 100% Light Mode
+        }
+
+        function applyPortalTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            var icon = document.getElementById('themeToggleIcon');
+            var text = document.getElementById('themeToggleText');
+            var btn = document.getElementById('themeToggleBtn');
+            var isDark = theme === 'dark';
+            if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+            if (text) text.textContent = isDark ? 'लाइट मोड | Light' : 'डार्क मोड | Dark';
+            if (btn) {
+                btn.setAttribute('aria-label', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+                btn.setAttribute('title', isDark ? 'लाइट मोड में बदलें | Switch to Light Mode' : 'डार्क मोड में बदलें | Switch to Dark Mode');
+            }
+        }
+
+        var _themeThrottle = false;
+        function toggleTheme(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            if (_themeThrottle) return;
+            _themeThrottle = true;
+            setTimeout(function() { _themeThrottle = false; }, 200);
+
+            var current = document.documentElement.getAttribute('data-theme') || 'light';
+            var nextTheme = (current === 'dark') ? 'light' : 'dark';
+            try {
+                localStorage.setItem(THEME_KEY, nextTheme);
+            } catch (err) {}
+            applyPortalTheme(nextTheme);
+        }
+
+        // Apply theme immediately before page render
+        try {
+            applyPortalTheme(getStoredTheme());
+        } catch (e) {}
+
+        // Ensure icon & label are in sync once DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            applyPortalTheme(document.documentElement.getAttribute('data-theme') || getStoredTheme());
+        });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -24,6 +79,10 @@
                     </div>
                 </div>
                 <div class="header-badge-box">
+                    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme(event)" aria-label="Toggle Dark / Light Mode" title="थीम बदलें | Toggle Theme">
+                        <span class="theme-toggle-icon" id="themeToggleIcon">🌙</span>
+                        <span id="themeToggleText">डार्क मोड | Dark</span>
+                    </button>
                     <div class="live-pill">
                         <span class="pulse-dot"></span>
                         <span>ऑनलाइन पोर्टल | Live Portal</span>
@@ -131,6 +190,23 @@
 
                     <!-- Address Information Section -->
                     <div class="section-title">📍 पता जानकारी | Address Information</div>
+
+                    <!-- Quick Village Auto-fill Box -->
+                    <div class="village-autofill-box">
+                        <div class="autofill-header">
+                            <label for="villageSearchInput" class="autofill-label">
+                                ⚡ गाँव के नाम से खोजें (ब्लॉक व पंचायत स्वतः भर जाएंगे) | Quick Search Village (Auto-fill Block & GP):
+                            </label>
+                            <span class="autofill-badge">ऑटो-फिल / Auto-Fill</span>
+                        </div>
+                        <div class="autofill-input-wrap">
+                            <span class="autofill-icon">🔍</span>
+                            <input type="text" id="villageSearchInput" list="allVillagesDatalist" placeholder="यहाँ गाँव का नाम लिखें... (उदा. गीदम, कटेकल्याण, कुआकोंडा)" autocomplete="off">
+                            <button type="button" class="btn-clear-autofill" id="clearAutofillBtn" style="display: none;" title="साफ करें | Clear">✕</button>
+                        </div>
+                        <datalist id="allVillagesDatalist"></datalist>
+                        <div class="autofill-status" id="autofillStatus" style="display: none;"></div>
+                    </div>
 
                     <div class="form-grid">
                         <div class="form-group">

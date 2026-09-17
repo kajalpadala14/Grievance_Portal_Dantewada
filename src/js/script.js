@@ -8,9 +8,87 @@ let searchQuery = '';
 let statusFilterQuery = '';
 
 /**
+ * Theme Management (Light / Dark Mode)
+ */
+const THEME_STORAGE_KEY = 'dantewada_portal_theme';
+
+function getCurrentTheme() {
+    try {
+        if (localStorage.getItem('portal-theme')) {
+            localStorage.removeItem('portal-theme');
+        }
+        const saved = localStorage.getItem(THEME_STORAGE_KEY);
+        if (saved === 'dark' || saved === 'light') {
+            return saved;
+        }
+    } catch (e) {
+        // Ignore localStorage error
+    }
+    return 'light'; // Default is Light Mode
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeToggleButton(theme);
+}
+
+function updateThemeToggleButton(theme) {
+    const btn = document.getElementById('themeToggleBtn');
+    const icon = document.getElementById('themeToggleIcon');
+    const text = document.getElementById('themeToggleText');
+    if (!btn) return;
+
+    const isDark = theme === 'dark';
+    if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+    if (text) text.textContent = isDark ? 'लाइट मोड | Light' : 'डार्क मोड | Dark';
+    btn.setAttribute('aria-label', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+    btn.setAttribute('title', isDark ? 'लाइट मोड में बदलें | Switch to Light Mode' : 'डार्क मोड में बदलें | Switch to Dark Mode');
+}
+
+let _themeThrottleLock = false;
+export function toggleTheme(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (_themeThrottleLock) return;
+    _themeThrottleLock = true;
+    setTimeout(() => { _themeThrottleLock = false; }, 200);
+
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const nextTheme = current === 'dark' ? 'light' : 'dark';
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    } catch (e) {
+        // Ignore localStorage error
+    }
+    applyTheme(nextTheme);
+}
+
+function initTheme() {
+    const theme = getCurrentTheme();
+    applyTheme(theme);
+
+    if (window.matchMedia) {
+        try {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                try {
+                    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+                    if (!saved) {
+                        applyTheme(e.matches ? 'dark' : 'light');
+                    }
+                } catch (err) {
+                    // Ignore error
+                }
+            });
+        } catch (e) {
+            // Older browser fallback
+        }
+    }
+}
+
+/**
  * Initialize application
  */
 async function init() {
+    initTheme();
     setDefaultDate();
     setupEventListeners();
     startLiveClock();
@@ -163,6 +241,191 @@ function renderFormOptions(config) {
             html += `<option value="${escapeHtml(s.id)}">${escapeHtml(s.label || s.id)}</option>`;
         });
         statusFilterSelect.innerHTML = html;
+    }
+
+    // 5. Build and populate Village reverse auto-fill index
+    if (config.locations) {
+        buildVillagesIndex(config.locations);
+        populateAllVillagesDatalist();
+    }
+}
+
+// Flat Index of all Villages across the District for Reverse Auto-fill
+let allVillagesIndex = [];
+
+/**
+ * Build flat village index for instant lookup & datalist autocomplete
+ */
+function buildVillagesIndex(locations) {
+    allVillagesIndex = [];
+    if (!locations || typeof locations !== 'object') return;
+
+    for (const [block, panchayats] of Object.entries(locations)) {
+        if (!block || block === '__OTHER__' || !panchayats || typeof panchayats !== 'object') continue;
+        for (const [panchayat, villages] of Object.entries(panchayats)) {
+            if (!panchayat || panchayat === '__OTHER__' || !Array.isArray(villages)) continue;
+            for (const village of villages) {
+                if (!village || village === '__OTHER__') continue;
+                const vTrim = village.trim();
+                const pTrim = panchayat.trim();
+                const bTrim = block.trim();
+                allVillagesIndex.push({
+                    village: vTrim,
+                    panchayat: pTrim,
+                    block: bTrim,
+                    searchKey: `${vTrim} ${pTrim} ${bTrim}`.toLowerCase(),
+                    displayLabel: `${vTrim} (पंचायत: ${pTrim}, ब्लॉक: ${bTrim})`
+                });
+            }
+        }
+    }
+}
+
+/**
+ * Populate the <datalist id="allVillagesDatalist">
+ */
+function populateAllVillagesDatalist() {
+    const datalist = document.getElementById('allVillagesDatalist');
+    if (!datalist) return;
+
+    if (allVillagesIndex.length === 0) {
+        datalist.innerHTML = '';
+        return;
+    }
+
+    // Sort alphabetically by village name
+    const sorted = [...allVillagesIndex].sort((a, b) => a.village.localeCompare(b.village, 'hi'));
+    let html = '';
+    sorted.forEach(item => {
+        html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
+    });
+    datalist.innerHTML = html;
+}
+
+/**
+ * Find matching village(s) from user query
+ */
+function findVillageMatches(query) {
+    const q = (query || '').trim().toLowerCase();
+    if (!q) return [];
+
+    // 1. Exact match with displayLabel e.g. "गीदम (पंचायत: गीदम, ब्लॉक: गीदम)"
+    const exactDisplay = allVillagesIndex.find(v => v.displayLabel.toLowerCase() === q);
+    if (exactDisplay) return [exactDisplay];
+
+    // 2. Exact match with village name e.g. "गीदम"
+    const exactVillage = allVillagesIndex.filter(v => v.village.toLowerCase() === q);
+    if (exactVillage.length > 0) return exactVillage;
+
+    // 3. Prefix match e.g. "गीद"
+    const prefixMatches = allVillagesIndex.filter(v => v.village.toLowerCase().startsWith(q));
+    if (prefixMatches.length > 0) return prefixMatches;
+
+    // 4. Contains match anywhere in searchKey
+    return allVillagesIndex.filter(v => v.searchKey.includes(q));
+}
+
+/**
+ * Handle Village Auto-Fill: fills Block and Gram Panchayat automatically
+ */
+function handleVillageAutoFill(query) {
+    const statusEl = document.getElementById('autofillStatus');
+    const clearBtn = document.getElementById('clearAutofillBtn');
+    const rawVal = (query || '').trim();
+
+    if (clearBtn) {
+        clearBtn.style.display = rawVal ? 'flex' : 'none';
+    }
+
+    if (!rawVal) {
+        if (statusEl) statusEl.style.display = 'none';
+        return;
+    }
+
+    const matches = findVillageMatches(rawVal);
+
+    if (matches.length === 0) {
+        if (statusEl) {
+            statusEl.className = 'autofill-status info';
+            statusEl.style.display = 'flex';
+            statusEl.innerHTML = `⚠️ <strong>"${escapeHtml(rawVal)}"</strong> नाम का ग्राम लिस्ट में नहीं मिला। आप नीचे ड्रॉपडाउन से ब्लॉक और पंचायत चुन सकते हैं।`;
+        }
+        return;
+    }
+
+    // If exactly 1 match, or if user selected a specific option containing "(पंचायत:"
+    if (matches.length === 1 || rawVal.includes('(')) {
+        const match = matches[0];
+        applyLocationAutoFill(match);
+    } else if (matches.length > 1) {
+        // Multiple villages with the same name across different Panchayats or Blocks
+        if (statusEl) {
+            statusEl.className = 'autofill-status info';
+            statusEl.style.display = 'flex';
+            statusEl.innerHTML = `ℹ️ <strong>"${escapeHtml(rawVal)}"</strong> नाम से <strong>${matches.length}</strong> गाँव मिले। कृपया लिस्ट से सही पंचायत वाला विकल्प चुनें।`;
+        }
+    }
+}
+
+/**
+ * Apply the auto-filled Block, Panchayat, and Village to the form controls
+ */
+function applyLocationAutoFill(match) {
+    const blockSelect = document.getElementById('block');
+    const panchayatSelect = document.getElementById('panchayat');
+    const villageSelect = document.getElementById('village');
+    const statusEl = document.getElementById('autofillStatus');
+    const searchInput = document.getElementById('villageSearchInput');
+
+    // 1. Select Block & trigger dependent panchayats
+    if (blockSelect) {
+        blockSelect.value = match.block;
+        blockSelect.classList.add('autofill-highlight');
+        setTimeout(() => blockSelect.classList.remove('autofill-highlight'), 1000);
+        handleBlockChange();
+    }
+
+    // 2. Select Gram Panchayat & trigger dependent villages
+    if (panchayatSelect) {
+        panchayatSelect.value = match.panchayat;
+        panchayatSelect.classList.add('autofill-highlight');
+        setTimeout(() => panchayatSelect.classList.remove('autofill-highlight'), 1000);
+        handlePanchayatChange();
+    }
+
+    // 3. Select Village
+    if (villageSelect) {
+        villageSelect.value = match.village;
+        villageSelect.classList.add('autofill-highlight');
+        setTimeout(() => villageSelect.classList.remove('autofill-highlight'), 1000);
+        handleVillageChange();
+    }
+
+    // 4. Update status display
+    if (statusEl) {
+        statusEl.className = 'autofill-status success';
+        statusEl.style.display = 'flex';
+        statusEl.innerHTML = `✓ <strong>स्वतः भर दिया गया:</strong> ब्लॉक: <strong>${escapeHtml(match.block)}</strong> | ग्राम पंचायत: <strong>${escapeHtml(match.panchayat)}</strong> | ग्राम: <strong>${escapeHtml(match.village)}</strong>`;
+    }
+
+    // Clean up input value to simple village display name if user selected the full option
+    if (searchInput && searchInput.value.includes('(')) {
+        searchInput.value = match.village;
+    }
+}
+
+/**
+ * Clear the Village Auto-Fill input and reset status
+ */
+function clearVillageAutoFill() {
+    const searchInput = document.getElementById('villageSearchInput');
+    const clearBtn = document.getElementById('clearAutofillBtn');
+    const statusEl = document.getElementById('autofillStatus');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (statusEl) {
+        statusEl.style.display = 'none';
+        statusEl.innerHTML = '';
     }
 }
 
@@ -325,10 +588,27 @@ function setupEventListeners() {
         form.addEventListener('submit', handleFormSubmit);
         form.addEventListener('reset', () => {
             setTimeout(() => {
+                clearVillageAutoFill();
                 handleBlockChange();
                 setDefaultDate();
             }, 20);
         });
+    }
+
+    // Village Quick Search & Reverse Auto-Fill Input
+    const villageSearchInput = document.getElementById('villageSearchInput');
+    if (villageSearchInput) {
+        villageSearchInput.addEventListener('input', (e) => {
+            handleVillageAutoFill(e.target.value);
+        });
+        villageSearchInput.addEventListener('change', (e) => {
+            handleVillageAutoFill(e.target.value);
+        });
+    }
+
+    const clearAutofillBtn = document.getElementById('clearAutofillBtn');
+    if (clearAutofillBtn) {
+        clearAutofillBtn.addEventListener('click', clearVillageAutoFill);
     }
 
     // Cascading Location Dropdown Listeners
@@ -960,6 +1240,7 @@ function formatDate(dateStr) {
 
 // Bind to window for HTML inline onclick handlers
 window.switchTab = switchTab;
+window.toggleTheme = toggleTheme;
 
 // Start app on DOM ready
 window.addEventListener('DOMContentLoaded', init);
