@@ -260,14 +260,12 @@
                             <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" data-i18n-ph="phAadhar" inputmode="numeric">
                         </div>
                         <div class="form-group">
-                        <div class="form-group">
                             <div class="field-header-row">
-                                <label for="enrollment" data-i18n="lblEnrollment">एनरोलमेंट नंबर (28 अंक)</label>
-                                <span class="digit-counter count-zero" id="enrollmentCounter" title="दर्ज किए गए अंक / Entered digits">0 / 28 अंक</span>
+                                <label for="enrollment" data-i18n="lblEnrollment">एनरोलमेंट नंबर (28 अंक/अक्षर)</label>
+                                <span class="digit-counter count-zero" id="enrollmentCounter" title="दर्ज किए गए वर्ण / Entered characters">0 / 28 वर्ण</span>
                             </div>
-                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[0-9]{28}" placeholder="28 अंकों का एनरोलमेंट नंबर" data-i18n-ph="phEnrollment" inputmode="numeric">
-                            <small class="digit-count-hint hint-zero" id="enrollmentHint">28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)</small>
-                        </div>
+                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[a-zA-Z0-9]{28}" placeholder="28 अंकों/अक्षरों का एनरोलमेंट नंबर" data-i18n-ph="phEnrollment" autocomplete="off">
+                            <small class="digit-count-hint hint-zero" id="enrollmentHint">28 वर्णों (अंक/अक्षर) का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> दर्ज हैं)</small>
                         </div>
                     </div>
 

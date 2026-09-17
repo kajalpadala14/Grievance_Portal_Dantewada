@@ -587,7 +587,7 @@ function setDefaultDate() {
 }
 
 /**
- * Live digit counter for Enrollment Number (max 28 digits)
+ * Live character counter for Enrollment Number (alphanumeric, max 28 characters)
  */
 function updateEnrollmentCounter() {
     const enrollmentInput = document.getElementById('enrollment');
@@ -601,13 +601,13 @@ function updateEnrollmentCounter() {
     if (enrollmentCounter) {
         enrollmentCounter.classList.remove('count-zero', 'count-partial', 'count-complete');
         if (count === 0) {
-            enrollmentCounter.textContent = lang === 'en' ? '0 / 28 digits' : '0 / 28 अंक';
+            enrollmentCounter.textContent = lang === 'en' ? '0 / 28 chars' : '0 / 28 वर्ण';
             enrollmentCounter.classList.add('count-zero');
         } else if (count < 28) {
-            enrollmentCounter.textContent = lang === 'en' ? `${count} / 28 digits (${28 - count} left)` : `${count} / 28 अंक (${28 - count} शेष)`;
+            enrollmentCounter.textContent = lang === 'en' ? `${count} / 28 chars (${28 - count} left)` : `${count} / 28 वर्ण (${28 - count} शेष)`;
             enrollmentCounter.classList.add('count-partial');
         } else {
-            enrollmentCounter.textContent = lang === 'en' ? '✓ 28 / 28 Complete' : '✓ 28 / 28 अंक पूर्ण';
+            enrollmentCounter.textContent = lang === 'en' ? '✓ 28 / 28 Complete' : '✓ 28 / 28 वर्ण पूर्ण';
             enrollmentCounter.classList.add('count-complete');
         }
     }
@@ -616,18 +616,18 @@ function updateEnrollmentCounter() {
         enrollmentHint.classList.remove('hint-zero', 'hint-partial', 'hint-complete');
         if (count === 0) {
             enrollmentHint.innerHTML = lang === 'en'
-                ? 'Enter 28-digit Enrollment Number (currently <strong>0</strong> digits entered)'
-                : '28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)';
+                ? 'Enter 28-character Enrollment Number (letters & numbers, currently <strong>0</strong> entered)'
+                : '28 वर्णों (अंक/अक्षर) का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> दर्ज हैं)';
             enrollmentHint.classList.add('hint-zero');
         } else if (count < 28) {
             enrollmentHint.innerHTML = lang === 'en'
-                ? `Entered digits: <strong>${count}</strong> / 28 (still need <strong>${28 - count}</strong> more digits)`
-                : `दर्ज किए गए अंक: <strong>${count}</strong> / 28 (अभी <strong>${28 - count}</strong> अंक और भरने हैं)`;
+                ? `Entered characters: <strong>${count}</strong> / 28 (still need <strong>${28 - count}</strong> more)`
+                : `दर्ज वर्ण: <strong>${count}</strong> / 28 (अभी <strong>${28 - count}</strong> वर्ण और भरने हैं)`;
             enrollmentHint.classList.add('hint-partial');
         } else {
             enrollmentHint.innerHTML = lang === 'en'
-                ? '✓ <strong>28 digits complete</strong>'
-                : '✓ <strong>28 अंक पूरे हो चुके हैं</strong>';
+                ? '✓ <strong>28 characters complete</strong>'
+                : '✓ <strong>28 वर्ण पूरे हो चुके हैं</strong>';
             enrollmentHint.classList.add('hint-complete');
         }
     }
@@ -739,15 +739,20 @@ function setupEventListeners() {
         });
     }
 
-    // 3. Enrollment number: numbers only, max 28 digits with live digit counter
+    // 3. Enrollment number: alphanumeric (letters + numbers), max 28 characters
     const enrollmentInput = document.getElementById('enrollment');
     if (enrollmentInput) {
         enrollmentInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 28);
+            e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 28);
             updateEnrollmentCounter();
         });
         enrollmentInput.addEventListener('paste', () => {
-            setTimeout(updateEnrollmentCounter, 10);
+            setTimeout(() => {
+                if (enrollmentInput) {
+                    enrollmentInput.value = enrollmentInput.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 28);
+                    updateEnrollmentCounter();
+                }
+            }, 10);
         });
     }
     updateEnrollmentCounter();
@@ -906,9 +911,12 @@ async function handleFormSubmit(e) {
         return;
     }
 
-    // 3. Enrollment Validation: If provided, must be exactly 28 digits
+    // 3. Enrollment Validation: If provided, must be exactly 28 characters
     if (enrollmentVal && enrollmentVal.length !== 28) {
-        alert('⚠️ एनरोलमेंट नंबर ठीक 28 अंकों का होना चाहिए।\nEnrollment number must be exactly 28 digits.');
+        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
+        alert(lang === 'en'
+            ? `⚠️ Enrollment number must be exactly 28 characters (letters/digits).\nCurrent length: ${enrollmentVal.length}`
+            : `⚠️ एनरोलमेंट नंबर ठीक 28 वर्णों (अंक/अक्षर) का होना चाहिए।\nEnrollment number must be exactly 28 characters.`);
         document.getElementById('enrollment').focus();
         return;
     }
