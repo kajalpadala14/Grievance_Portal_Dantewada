@@ -377,7 +377,6 @@ function findVillageMatches(query) {
  * Handle Village input: auto-fills Block and Gram Panchayat if matching village is typed/chosen
  */
 function handleVillageInput(query) {
-    const statusEl = document.getElementById('autofillStatus');
     const clearBtn = document.getElementById('clearVillageBtn');
     const rawVal = (query || '').trim();
 
@@ -386,10 +385,6 @@ function handleVillageInput(query) {
     }
 
     if (!rawVal) {
-        if (statusEl) {
-            statusEl.style.display = 'none';
-            statusEl.innerHTML = '';
-        }
         return;
     }
 
@@ -398,18 +393,12 @@ function handleVillageInput(query) {
 
     // If both block and panchayat are already manually chosen and user is just typing simple village name, don't overwrite
     if (currentBlock && currentPanchayat && !rawVal.includes('(')) {
-        if (statusEl) statusEl.style.display = 'none';
         return;
     }
 
     const matches = findVillageMatches(rawVal);
 
     if (matches.length === 0) {
-        if (statusEl && !currentBlock) {
-            statusEl.className = 'autofill-status info';
-            statusEl.style.display = 'flex';
-            statusEl.innerHTML = `ℹ️ <strong>"${escapeHtml(rawVal)}"</strong> सूची में नहीं मिला। आप ऊपर ब्लॉक व पंचायत चुनकर इसे दर्ज कर सकते हैं।`;
-        }
         return;
     }
 
@@ -417,13 +406,6 @@ function handleVillageInput(query) {
     if (matches.length === 1 || rawVal.includes('(')) {
         const match = matches[0];
         applyLocationAutoFill(match);
-    } else if (matches.length > 1) {
-        // Multiple villages with same name
-        if (statusEl) {
-            statusEl.className = 'autofill-status info';
-            statusEl.style.display = 'flex';
-            statusEl.innerHTML = `ℹ️ <strong>"${escapeHtml(rawVal)}"</strong> नाम से <strong>${matches.length}</strong> गाँव मिले। कृपया लिस्ट से सही पंचायत वाला विकल्प चुनें।`;
-        }
     }
 }
 
@@ -434,7 +416,6 @@ function applyLocationAutoFill(match) {
     const blockSelect = document.getElementById('block');
     const panchayatSelect = document.getElementById('panchayat');
     const villageInput = document.getElementById('village');
-    const statusEl = document.getElementById('autofillStatus');
 
     // 1. Select Block
     if (blockSelect) {
@@ -473,13 +454,6 @@ function applyLocationAutoFill(match) {
         villageInput.classList.add('autofill-highlight');
         setTimeout(() => villageInput.classList.remove('autofill-highlight'), 1200);
     }
-
-    // 5. Update status display with confirmation
-    if (statusEl) {
-        statusEl.className = 'autofill-status success';
-        statusEl.style.display = 'flex';
-        statusEl.innerHTML = `✓ <strong>स्वतः भर दिया गया:</strong> ब्लॉक: <strong>${escapeHtml(match.block)}</strong> | ग्राम पंचायत: <strong>${escapeHtml(match.panchayat)}</strong>`;
-    }
 }
 
 /**
@@ -488,16 +462,11 @@ function applyLocationAutoFill(match) {
 function clearVillage() {
     const villageInput = document.getElementById('village');
     const clearBtn = document.getElementById('clearVillageBtn');
-    const statusEl = document.getElementById('autofillStatus');
     if (villageInput) {
         villageInput.value = '';
         villageInput.focus();
     }
     if (clearBtn) clearBtn.style.display = 'none';
-    if (statusEl) {
-        statusEl.style.display = 'none';
-        statusEl.innerHTML = '';
-    }
 }
 
 /**
@@ -508,7 +477,6 @@ function handleBlockChange() {
     const panchayatSelect = document.getElementById('panchayat');
     const villageInput = document.getElementById('village');
     const panchayatCustom = document.getElementById('panchayatCustom');
-    const statusEl = document.getElementById('autofillStatus');
 
     const selectedBlock = blockSelect ? blockSelect.value : '';
 
@@ -522,7 +490,6 @@ function handleBlockChange() {
         }
         // Reset datalist to district-wide
         populateAllVillagesDatalist(null, null);
-        if (statusEl) statusEl.style.display = 'none';
         return;
     }
 
@@ -549,7 +516,6 @@ function handleBlockChange() {
         const belongs = allVillagesIndex.some(v => v.village.toLowerCase() === vClean.toLowerCase() && v.block.toLowerCase() === selectedBlock.toLowerCase());
         if (!belongs) {
             villageInput.value = '';
-            if (statusEl) statusEl.style.display = 'none';
         }
     }
 }
@@ -562,7 +528,6 @@ function handlePanchayatChange() {
     const panchayatSelect = document.getElementById('panchayat');
     const villageInput = document.getElementById('village');
     const panchayatCustom = document.getElementById('panchayatCustom');
-    const statusEl = document.getElementById('autofillStatus');
 
     const selectedBlock = blockSelect ? blockSelect.value : '';
     const selectedPanchayat = panchayatSelect ? panchayatSelect.value : '';
@@ -599,10 +564,6 @@ function handlePanchayatChange() {
         if (!belongs) {
             villageInput.value = '';
         }
-    }
-
-    if (statusEl) {
-        statusEl.style.display = 'none';
     }
 }
 
