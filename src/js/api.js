@@ -2,8 +2,18 @@ import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
 
 // Normalize Google Apps Script URL from .env (Vite environment variables)
 export const APPS_SCRIPT_URL = (() => {
-  let url = (import.meta.env && import.meta.env.VITE_APPS_SCRIPT_URL) || "";
-  url = url.trim().replace(/\/+$/, "");
+  let url = "";
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta && import.meta.env && import.meta.env.VITE_APPS_SCRIPT_URL) {
+      url = import.meta.env.VITE_APPS_SCRIPT_URL;
+    }
+  } catch (e) {}
+  try {
+    if (!url && typeof window !== "undefined" && window.__APPS_SCRIPT_URL__) {
+      url = window.__APPS_SCRIPT_URL__;
+    }
+  } catch (e) {}
+  url = (url || "").trim().replace(/\/+$/, "");
   if (url && !url.endsWith("/exec")) {
     url += "/exec";
   }
@@ -36,7 +46,7 @@ export async function getInitialData() {
         config = { ...DEFAULT_CONFIG, ...parsed };
       } else {
         localStorage.removeItem(LOCAL_CONFIG_KEY);
-        config = { ...DEFAULT_CONFIG, locations: {}, blocks: [] };
+        config = DEFAULT_CONFIG;
       }
     } catch (e) {
       config = DEFAULT_CONFIG;
@@ -67,10 +77,10 @@ export async function getInitialData() {
               isFromSheet: true,
               locations: (result.config.locations && Object.keys(result.config.locations).length > 0)
                 ? result.config.locations
-                : {},
+                : DEFAULT_CONFIG.locations,
               blocks: (result.config.blocks && result.config.blocks.length > 0)
                 ? result.config.blocks
-                : []
+                : DEFAULT_CONFIG.blocks
             };
             localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
             console.log('[API] Loaded configuration from Google Sheet:', config);

@@ -1,6 +1,6 @@
 import { getCurrentLanguage, applyLanguage, toggleLanguage, TRANSLATIONS } from './i18n.js';
 import { getInitialData, submitGrievance, APPS_SCRIPT_URL, fetchLocationsFromSheet } from './api.js';
-import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
+import { DEFAULT_CONFIG, DEFAULT_LOCATIONS, getEnglishLocationName } from '../config/defaultConfig.js';
 
 // Application State
 let currentConfig = DEFAULT_CONFIG;
@@ -257,11 +257,37 @@ function renderFormOptions(config) {
     }
 }
 
+/**
+ * Normalizes Devanagari Hindi text to handle nuktas, anusvaras, and typing variants
+ * e.g., 'दंतेवाड़ा' == 'दंतेवाडा' == 'दन्तेवाडा' == 'दन्तेवाड़ा'
+ */
+function normalizeDevanagari(str) {
+    if (!str) return '';
+    return String(str)
+        .normalize('NFC')
+        .replace(/\u0958/g, '\u0915') // क़ -> क
+        .replace(/\u0959/g, '\u0916') // ख़ -> ख
+        .replace(/\u095A/g, '\u0917') // ग़ -> ग
+        .replace(/\u095B/g, '\u091c') // ज़ -> ज
+        .replace(/\u095C/g, '\u0921') // ड़ -> ड
+        .replace(/\u095D/g, '\u0922') // ढ़ -> ढ
+        .replace(/\u095E/g, '\u092b') // फ़ -> फ
+        .replace(/\u095F/g, '\u092f') // य़ -> य
+        .replace(/\u093c/g, '')        // standalone nukta
+        .replace(/\u0901/g, '\u0902')  // chandrabindu -> anusvara
+        .replace(/[\u0919\u091e\u0923\u0928\u092e]\u094d/g, '\u0902') // half-nasal -> anusvara
+        .replace(/[\u200B-\u200D\uFEFF]/g, '') // zero-width
+        .trim()
+        .toLowerCase();
+}
+
 // Flat Index of all Villages across the District for Reverse Auto-fill
 let allVillagesIndex = [];
+buildVillagesIndex(DEFAULT_LOCATIONS);
 
 /**
  * Build flat village index for instant lookup & datalist autocomplete
+ * Indexes both Hindi (Devanagari normalized) and English/transliterated names
  */
 function buildVillagesIndex(locations) {
     allVillagesIndex = [];
@@ -276,12 +302,54 @@ function buildVillagesIndex(locations) {
                 const vTrim = village.trim();
                 const pTrim = panchayat.trim();
                 const bTrim = block.trim();
+
+                const vClean = vTrim.replace(/\s*\([^)]*\)/g, '').trim();
+                const vEn = getEnglishLocationName(vTrim);
+                const vCleanEn = getEnglishLocationName(vClean);
+                const pEn = getEnglishLocationName(pTrim);
+                const bEn = getEnglishLocationName(bTrim);
+
+                const vDevaNorm = normalizeDevanagari(vClean);
+                const pDevaNorm = normalizeDevanagari(pTrim);
+                const bDevaNorm = normalizeDevanagari(bTrim);
+                const vCompact = vDevaNorm.replace(/[\s\-_.,/()]/g, '');
+                const pCompact = pDevaNorm.replace(/[\s\-_.,/()]/g, '');
+                const bCompact = bDevaNorm.replace(/[\s\-_.,/()]/g, '');
+
+                const displayLabel = `${vTrim} / ${vEn} (पंचायत: ${pTrim}, ब्लॉक: ${bTrim})`;
+
                 allVillagesIndex.push({
                     village: vTrim,
+                    villageClean: vClean,
+                    villageDevaNorm: vDevaNorm,
+                    villageCompact: vCompact,
+                    villageEn: vEn,
+                    villageCleanEn: vCleanEn,
                     panchayat: pTrim,
+                    panchayatDevaNorm: pDevaNorm,
+                    panchayatCompact: pCompact,
+                    panchayatEn: pEn,
                     block: bTrim,
-                    searchKey: `${vTrim} ${pTrim} ${bTrim}`.toLowerCase(),
-                    displayLabel: `${vTrim} (पंचायत: ${pTrim}, ब्लॉक: ${bTrim})`
+                    blockDevaNorm: bDevaNorm,
+                    blockCompact: bCompact,
+                    blockEn: bEn,
+                    displayLabel: displayLabel,
+                    searchTokens: [
+                        vTrim.toLowerCase(),
+                        vClean.toLowerCase(),
+                        vDevaNorm,
+                        vCompact,
+                        vEn.toLowerCase(),
+                        vCleanEn.toLowerCase(),
+                        pTrim.toLowerCase(),
+                        pDevaNorm,
+                        pCompact,
+                        pEn.toLowerCase(),
+                        bTrim.toLowerCase(),
+                        bDevaNorm,
+                        bCompact,
+                        bEn.toLowerCase()
+                    ]
                 });
             }
         }
@@ -294,7 +362,6 @@ function buildVillagesIndex(locations) {
  */
 function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null) {
     const datalist = document.getElementById('allVillagesDatalist');
-    const villageInput = document.getElementById('village');
     if (!datalist) return;
 
     if (allVillagesIndex.length === 0) {
@@ -319,71 +386,174 @@ function populateAllVillagesDatalist(filterBlock = null, filterPanchayat = null)
 
     let html = '';
     if (filterPanchayat && filterPanchayat !== '__OTHER__') {
-        // Panchayat is already known -> show only village names
+        // Panchayat is already known -> show village with English name
         sorted.forEach(item => {
-            html += `<option value="${escapeHtml(item.village)}"></option>`;
+            html += `<option value="${escapeHtml(item.village)}">${escapeHtml(item.villageEn)}</option>`;
         });
-        if (villageInput && (!villageInput.value || !filterPanchayat)) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
-        }
     } else if (filterBlock && filterBlock !== '__OTHER__') {
         // Block is known -> show village + panchayat
         sorted.forEach(item => {
-            html += `<option value="${escapeHtml(item.village)} (पंचायत: ${escapeHtml(item.panchayat)})">${escapeHtml(item.village)}</option>`;
+            const val = `${item.village} / ${item.villageEn} (पंचायत: ${item.panchayat})`;
+            html += `<option value="${escapeHtml(val)}">${escapeHtml(item.village)} (${escapeHtml(item.panchayat)})</option>`;
         });
-        if (villageInput && !villageInput.value) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
-        }
     } else {
         // District-wide -> show village + panchayat + block
         sorted.forEach(item => {
-            html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)}</option>`;
+            html += `<option value="${escapeHtml(item.displayLabel)}">${escapeHtml(item.village)} / ${escapeHtml(item.villageEn)}</option>`;
         });
-        if (villageInput && !villageInput.value) {
-            villageInput.placeholder = 'गाँव का नाम लिखें या चुनें';
-        }
     }
 
     datalist.innerHTML = html;
 }
 
 /**
- * Find matching village(s) from user query
+ * Phonetic/spelling normalizer for flexible English query matching
+ */
+function normalizeKey(str) {
+    return (str || '')
+        .toLowerCase()
+        .replace(/uwa/g, 'ua')
+        .replace(/uva/g, 'ua')
+        .replace(/[\s\-_.,/()]/g, '')
+        .replace(/ee/g, 'i')
+        .replace(/oo/g, 'u')
+        .replace(/w/g, 'v')
+        .replace(/sh/g, 's')
+        .replace(/aa/g, 'a');
+}
+
+function compactLocationKey(str) {
+    return normalizeDevanagari(str).replace(/[\s\-_.,/()]/g, '');
+}
+
+function isSameLocationName(value, target, targetEnglish = '') {
+    if (!value || !target) return false;
+    const valueText = String(value).trim();
+    const targetText = String(target).trim();
+    const valueEnglish = getEnglishLocationName(valueText);
+    const targetEn = targetEnglish || getEnglishLocationName(targetText);
+
+    return valueText === targetText ||
+        normalizeDevanagari(valueText) === normalizeDevanagari(targetText) ||
+        compactLocationKey(valueText) === compactLocationKey(targetText) ||
+        normalizeKey(valueText) === normalizeKey(targetText) ||
+        (targetEn && normalizeKey(valueText) === normalizeKey(targetEn)) ||
+        (valueEnglish && normalizeKey(valueEnglish) === normalizeKey(targetText)) ||
+        (valueEnglish && targetEn && normalizeKey(valueEnglish) === normalizeKey(targetEn));
+}
+
+function findLocationKey(source, target, targetEnglish = '') {
+    if (!source || !target) return '';
+    return Object.keys(source).find(key => isSameLocationName(key, target, targetEnglish)) || '';
+}
+
+function findSelectOption(selectEl, target, targetEnglish = '') {
+    if (!selectEl || !target) return null;
+    return Array.from(selectEl.options).find(option =>
+        isSameLocationName(option.value, target, targetEnglish) ||
+        isSameLocationName(option.textContent, target, targetEnglish)
+    ) || null;
+}
+
+/**
+ * Find matching village(s) from user query (supporting Hindi, English, and Datalist labels)
  */
 function findVillageMatches(query) {
-    const q = (query || '').trim().toLowerCase();
-    if (!q) return [];
+    const raw = (query || '').trim();
+    if (!raw) return [];
+    const q = raw.toLowerCase();
 
-    // 1. Exact match with displayLabel e.g. "गीदम (पंचायत: गीदम, ब्लॉक: गीदम)"
-    const exactDisplay = allVillagesIndex.find(v => v.displayLabel.toLowerCase() === q);
-    if (exactDisplay) return [exactDisplay];
+    // 1. Datalist selection or format containing parentheses e.g. "नेरली / Nerli (पंचायत: चितालंका, ब्लॉक: दंतेवाडा)"
+    if (raw.includes('(')) {
+        const exactDisplay = allVillagesIndex.find(v => v.displayLabel.toLowerCase() === q);
+        if (exactDisplay) return [exactDisplay];
 
-    // 1b. If formatted like "ग्राम (पंचायत: ...)"
-    if (q.includes('(')) {
-        const vPart = q.split('(')[0].trim();
-        const parenPart = q.slice(q.indexOf('('));
+        // Parse extracted parts from label
+        let pHint = '';
+        let bHint = '';
+        const pMatch = raw.match(/पंचायत[:\s]+([^,)]+)/i);
+        if (pMatch) pHint = pMatch[1].trim().toLowerCase();
+        const bMatch = raw.match(/ब्लॉक[:\s]+([^,)]+)/i);
+        if (bMatch) bHint = bMatch[1].trim().toLowerCase();
+
+        const vPart = raw.split('(')[0].trim().toLowerCase();
+        const vTokens = vPart.split('/').map(s => s.trim()).filter(Boolean);
+
         const matched = allVillagesIndex.find(v => {
-            return v.village.toLowerCase() === vPart && (parenPart.includes(v.panchayat.toLowerCase()) || parenPart.includes(v.block.toLowerCase()));
+            const matchesVillage = vTokens.some(tok =>
+                v.village.toLowerCase() === tok ||
+                v.villageClean.toLowerCase() === tok ||
+                v.villageEn.toLowerCase() === tok ||
+                v.villageCleanEn.toLowerCase() === tok
+            );
+            const matchesPanchayat = pHint ? (v.panchayat.toLowerCase() === pHint || v.panchayatEn.toLowerCase() === pHint) : true;
+            const matchesBlock = bHint ? (v.block.toLowerCase() === bHint || v.blockEn.toLowerCase() === bHint) : true;
+            return matchesVillage && matchesPanchayat && matchesBlock;
         });
         if (matched) return [matched];
     }
 
-    // 2. Exact match with village name e.g. "गीदम"
-    const exactVillage = allVillagesIndex.filter(v => v.village.toLowerCase() === q);
+    const cleanQ = q.replace(/\s*\([^)]*\)/g, '').split('/')[0].trim();
+    if (!cleanQ) return [];
+    const devaQ = normalizeDevanagari(cleanQ);
+    const devaQCompact = devaQ.replace(/[\s\-_.,/()]/g, '');
+
+    // 2. Exact match with village name (Hindi, Compact Devanagari, or English)
+    const exactVillage = allVillagesIndex.filter(v => 
+        v.village.toLowerCase() === cleanQ ||
+        v.villageClean.toLowerCase() === cleanQ ||
+        v.villageDevaNorm === devaQ ||
+        v.villageCompact === devaQCompact ||
+        v.villageEn.toLowerCase() === cleanQ ||
+        v.villageCleanEn.toLowerCase() === cleanQ
+    );
     if (exactVillage.length > 0) return exactVillage;
 
-    // 3. Prefix match e.g. "गीद"
-    const prefixMatches = allVillagesIndex.filter(v => v.village.toLowerCase().startsWith(q));
+    // 3. Flexible/phonetic exact match (handling v/w, ee/i, oo/u variants)
+    const normQ = normalizeKey(cleanQ);
+    const normMatches = allVillagesIndex.filter(v => 
+        normalizeKey(v.villageClean) === normQ ||
+        normalizeKey(v.villageCleanEn) === normQ ||
+        normalizeKey(v.village) === normQ ||
+        normalizeKey(v.villageEn) === normQ
+    );
+    if (normMatches.length > 0) return normMatches;
+
+    // 4. Prefix match on village name (Hindi, Compact Devanagari, or English)
+    const prefixMatches = allVillagesIndex.filter(v => 
+        v.village.toLowerCase().startsWith(cleanQ) ||
+        v.villageClean.toLowerCase().startsWith(cleanQ) ||
+        (devaQCompact.length >= 2 && v.villageCompact.startsWith(devaQCompact)) ||
+        (devaQ.length >= 2 && v.villageDevaNorm.startsWith(devaQ)) ||
+        v.villageEn.toLowerCase().startsWith(cleanQ) ||
+        v.villageCleanEn.toLowerCase().startsWith(cleanQ) ||
+        (normQ.length >= 3 && (
+            normalizeKey(v.villageCleanEn).startsWith(normQ) ||
+            normalizeKey(v.villageClean).startsWith(normQ)
+        ))
+    );
     if (prefixMatches.length > 0) return prefixMatches;
 
-    // 4. Contains match anywhere in searchKey
-    return allVillagesIndex.filter(v => v.searchKey.includes(q));
+    // 5. Contains match on village tokens
+    const containsMatches = allVillagesIndex.filter(v => 
+        v.village.toLowerCase().includes(cleanQ) ||
+        v.villageClean.toLowerCase().includes(cleanQ) ||
+        (devaQCompact.length >= 2 && v.villageCompact.includes(devaQCompact)) ||
+        (devaQ.length >= 2 && v.villageDevaNorm.includes(devaQ)) ||
+        v.villageEn.toLowerCase().includes(cleanQ) ||
+        v.villageCleanEn.toLowerCase().includes(cleanQ) ||
+        v.searchTokens.some(token => token.includes(cleanQ)) ||
+        (normQ.length >= 3 && v.searchTokens.some(token => normalizeKey(token).includes(normQ)))
+    );
+    return containsMatches;
 }
 
 /**
- * Handle Village input: auto-fills Block and Gram Panchayat if matching village is typed/chosen
+ * Handle Village input: auto-fills Block and Gram Panchayat as soon as village is typed or chosen
+ * @param {string} query - The input value
+ * @param {boolean} isBlur - True if called on blur/change/Enter (cleans input value)
  */
-function handleVillageInput(query) {
+function handleVillageInput(query, isBlur = false) {
     const clearBtn = document.getElementById('clearVillageBtn');
     const rawVal = (query || '').trim();
 
@@ -395,47 +565,99 @@ function handleVillageInput(query) {
         return;
     }
 
-    const currentBlock = document.getElementById('block') ? document.getElementById('block').value : '';
-    const currentPanchayat = document.getElementById('panchayat') ? document.getElementById('panchayat').value : '';
+    const isDatalistSelection = rawVal.includes('(') || allVillagesIndex.some(v => v.displayLabel === rawVal);
 
-    // If both block and panchayat are already manually chosen and user is just typing simple village name, don't overwrite
-    if (currentBlock && currentPanchayat && !rawVal.includes('(')) {
+    // If still typing and query is only 1 character (and not datalist selection), wait for 2nd letter
+    if (!isDatalistSelection && rawVal.length < 2) {
         return;
     }
 
     const matches = findVillageMatches(rawVal);
-
     if (matches.length === 0) {
         return;
     }
 
-    // If exactly 1 match or user selected an option with '('
-    if (matches.length === 1 || rawVal.includes('(')) {
-        const match = matches[0];
-        applyLocationAutoFill(match);
+    // Determine the most accurate match
+    let targetMatch = matches[0];
+    const cleanLower = rawVal.toLowerCase().replace(/\s*\([^)]*\)/g, '').split('/')[0].trim();
+    const cleanDeva = normalizeDevanagari(cleanLower);
+    const cleanDevaCompact = cleanDeva.replace(/[\s\-_.,/()]/g, '');
+
+    // If an exact match exists among candidates, prioritize it
+    const exactMatch = matches.find(m => 
+        m.village.toLowerCase() === cleanLower ||
+        m.villageClean.toLowerCase() === cleanLower ||
+        m.villageDevaNorm === cleanDeva ||
+        m.villageCompact === cleanDevaCompact ||
+        m.villageEn.toLowerCase() === cleanLower ||
+        m.villageCleanEn.toLowerCase() === cleanLower
+    );
+
+    if (exactMatch) {
+        // If a village shares name with its Gram Panchayat (e.g. Karli, Dantewada, Bacheli), choose that GP
+        const sameNameGp = matches.find(m => 
+            m.panchayat.toLowerCase() === cleanLower || 
+            m.panchayatDevaNorm === cleanDeva ||
+            m.panchayatCompact === cleanDevaCompact ||
+            m.panchayatEn.toLowerCase() === cleanLower
+        );
+        targetMatch = sameNameGp || exactMatch;
     }
+
+    // Apply auto-fill
+    applyLocationAutoFill(targetMatch, isDatalistSelection || isBlur);
 }
 
 /**
  * Apply the auto-filled Block, Panchayat, and Village to the form controls
  */
-function applyLocationAutoFill(match) {
+function applyLocationAutoFill(match, shouldCleanInput = false) {
+    if (!match) return;
     const blockSelect = document.getElementById('block');
     const panchayatSelect = document.getElementById('panchayat');
     const villageInput = document.getElementById('village');
 
+    const locSource = (currentConfig && currentConfig.locations && Object.keys(currentConfig.locations).length > 0)
+        ? currentConfig.locations
+        : DEFAULT_LOCATIONS;
+    const locBlockKey = findLocationKey(locSource, match.block, match.blockEn) || match.block;
+
     // 1. Select Block
-    if (blockSelect) {
-        blockSelect.value = match.block;
+    if (blockSelect && match.block) {
+        // Look for matching option by exact value, Devanagari normalized, or English
+        let blockOption = findSelectOption(blockSelect, locBlockKey, match.blockEn) ||
+            findSelectOption(blockSelect, match.block, match.blockEn);
+
+        if (!blockOption) {
+            const blockKeys = Object.keys(locSource);
+            let bHtml = '<option value="">-- चयन करें / Select Block --</option>';
+            blockKeys.forEach(b => {
+                const bEn = getEnglishLocationName(b);
+                bHtml += `<option value="${escapeHtml(b)}">${escapeHtml(b)}${bEn ? ` | ${escapeHtml(bEn)}` : ''}</option>`;
+            });
+            bHtml += '<option value="__OTHER__">➕ अन्य / Other</option>';
+            blockSelect.innerHTML = bHtml;
+            blockOption = findSelectOption(blockSelect, locBlockKey, match.blockEn) ||
+                findSelectOption(blockSelect, match.block, match.blockEn);
+        }
+
+        if (blockOption) {
+            blockSelect.value = blockOption.value;
+        } else {
+            blockSelect.value = locBlockKey || match.block;
+        }
         blockSelect.classList.add('autofill-highlight');
         setTimeout(() => blockSelect.classList.remove('autofill-highlight'), 1200);
 
         // Populate Panchayats for this Block
-        if (currentConfig.locations && currentConfig.locations[match.block]) {
-            const panchayats = Object.keys(currentConfig.locations[match.block]);
+        if (locSource[locBlockKey]) {
+            const panchayats = Object.keys(locSource[locBlockKey]);
             let html = '<option value="">-- ग्राम पंचायत चुनें / Select Gram Panchayat --</option>';
             panchayats.forEach(p => {
-                html += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+                const pEn = getEnglishLocationName(p);
+                const isMatch = isSameLocationName(p, match.panchayat, match.panchayatEn);
+                const isSelected = isMatch ? 'selected' : '';
+                html += `<option value="${escapeHtml(p)}" ${isSelected}>${escapeHtml(p)}${pEn ? ` | ${escapeHtml(pEn)}` : ''}</option>`;
             });
             html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
             if (panchayatSelect) {
@@ -446,25 +668,31 @@ function applyLocationAutoFill(match) {
     }
 
     // 2. Select Gram Panchayat
-    if (panchayatSelect) {
-        panchayatSelect.value = match.panchayat;
+    if (panchayatSelect && match.panchayat) {
+        panchayatSelect.disabled = false;
+        const gpOption = findSelectOption(panchayatSelect, match.panchayat, match.panchayatEn);
+        if (gpOption) {
+            panchayatSelect.value = gpOption.value;
+        } else {
+            panchayatSelect.value = match.panchayat;
+        }
         panchayatSelect.classList.add('autofill-highlight');
         setTimeout(() => panchayatSelect.classList.remove('autofill-highlight'), 1200);
     }
 
-    // 3. Update datalist to only show villages for this Panchayat
-    populateAllVillagesDatalist(match.block, match.panchayat);
-
-    // 4. Set clean village name in input (strips any "(पंचायत: ...)" string)
-    if (villageInput) {
-        villageInput.value = match.village;
-        villageInput.classList.add('autofill-highlight');
-        setTimeout(() => villageInput.classList.remove('autofill-highlight'), 1200);
+    // 3. Update datalist and clean village input if selection is finalized
+    if (shouldCleanInput) {
+        populateAllVillagesDatalist(locBlockKey || match.block, match.panchayat);
+        if (villageInput) {
+            villageInput.value = match.village;
+            villageInput.classList.add('autofill-highlight');
+            setTimeout(() => villageInput.classList.remove('autofill-highlight'), 1200);
+        }
     }
 }
 
 /**
- * Clear the Village input and reset status
+ * Clear the Village input, reset status, and restore district-wide village datalist
  */
 function clearVillage(shouldFocus = true) {
     const villageInput = document.getElementById('village');
@@ -474,6 +702,11 @@ function clearVillage(shouldFocus = true) {
         if (shouldFocus) villageInput.focus();
     }
     if (clearBtn) clearBtn.style.display = 'none';
+
+    // Restore full datalist
+    const currentBlock = document.getElementById('block') ? document.getElementById('block').value : null;
+    const currentPanchayat = document.getElementById('panchayat') ? document.getElementById('panchayat').value : null;
+    populateAllVillagesDatalist(currentBlock, currentPanchayat);
 }
 
 /**
@@ -504,7 +737,8 @@ function handleBlockChange() {
     const panchayats = Object.keys(currentConfig.locations[selectedBlock]);
     let html = '<option value="">-- ग्राम पंचायत चुनें / Select Gram Panchayat --</option>';
     panchayats.forEach(p => {
-        html += `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`;
+        const pEn = getEnglishLocationName(p);
+        html += `<option value="${escapeHtml(p)}">${escapeHtml(p)}${pEn ? ` | ${escapeHtml(pEn)}` : ''}</option>`;
     });
     html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
 
@@ -519,8 +753,18 @@ function handleBlockChange() {
 
     // If current village doesn't belong to this block, clear it
     if (villageInput && villageInput.value) {
-        const vClean = villageInput.value.split('(')[0].trim();
-        const belongs = allVillagesIndex.some(v => v.village.toLowerCase() === vClean.toLowerCase() && v.block.toLowerCase() === selectedBlock.toLowerCase());
+        const vClean = villageInput.value.split('(')[0].trim().toLowerCase();
+        const vDeva = normalizeDevanagari(vClean);
+        const bDeva = normalizeDevanagari(selectedBlock);
+        const belongs = allVillagesIndex.some(v => 
+            (v.village.toLowerCase() === vClean || 
+             v.villageClean.toLowerCase() === vClean ||
+             v.villageDevaNorm === vDeva ||
+             v.villageEn.toLowerCase() === vClean ||
+             v.villageCleanEn.toLowerCase() === vClean) && 
+            (v.block.toLowerCase() === selectedBlock.toLowerCase() ||
+             v.blockDevaNorm === bDeva)
+        );
         if (!belongs) {
             villageInput.value = '';
         }
@@ -565,9 +809,12 @@ function handlePanchayatChange() {
 
     // If current village doesn't belong to this panchayat, clear it
     if (villageInput && villageInput.value) {
-        const vClean = villageInput.value.split('(')[0].trim();
+        const vClean = villageInput.value.split('(')[0].trim().toLowerCase();
         const villagesInGP = currentConfig.locations[selectedBlock][selectedPanchayat] || [];
-        const belongs = villagesInGP.some(v => v.toLowerCase() === vClean.toLowerCase());
+        const belongs = villagesInGP.some(v => {
+            const vEn = getEnglishLocationName(v);
+            return v.toLowerCase() === vClean || (vEn && vEn.toLowerCase() === vClean);
+        });
         if (!belongs) {
             villageInput.value = '';
         }
@@ -673,10 +920,20 @@ function setupEventListeners() {
     const villageInput = document.getElementById('village');
     if (villageInput) {
         villageInput.addEventListener('input', (e) => {
-            handleVillageInput(e.target.value);
+            handleVillageInput(e.target.value, false);
         });
         villageInput.addEventListener('change', (e) => {
-            handleVillageInput(e.target.value);
+            handleVillageInput(e.target.value, true);
+        });
+        villageInput.addEventListener('blur', (e) => {
+            handleVillageInput(e.target.value, true);
+        });
+        villageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleVillageInput(e.target.value, true);
+                villageInput.blur();
+            }
         });
     }
 
@@ -854,6 +1111,9 @@ async function handleFormSubmit(e) {
     let villageVal = (villageInput ? villageInput.value.trim() : '');
     if (villageVal.includes('(')) {
         villageVal = villageVal.split('(')[0].trim();
+    }
+    if (villageVal.includes('/')) {
+        villageVal = villageVal.split('/')[0].trim();
     }
 
     const phoneVal = (document.getElementById('phone').value || '').trim();
@@ -1342,5 +1602,9 @@ window.__onLanguageChanged = function(lang) {
     updateEnrollmentCounter();
 };
 
-// Start app on DOM ready
-window.addEventListener('DOMContentLoaded', init);
+// Start app on DOM ready with safety check for already loaded DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

@@ -65,6 +65,7 @@ export const TRANSLATIONS = {
     lblDescription: "शिकायत का विस्तृत विवरण",
     lblRemarks: "अतिरिक्त टिप्पणियां",
     lblDate: "आवेदन की तारीख",
+    villageAutofillSuccess: "✓ स्वतः चयनित: ब्लॉक - {block} | ग्राम पंचायत - {panchayat}",
 
     // Placeholders
     phApplicantName: "पूरा नाम दर्ज करें",
@@ -181,6 +182,7 @@ export const TRANSLATIONS = {
     lblDescription: "Detailed Description",
     lblRemarks: "Additional Remarks",
     lblDate: "Date of Application",
+    villageAutofillSuccess: "✓ Auto-selected: Block - {block} | Gram Panchayat - {panchayat}",
 
     // Placeholders
     phApplicantName: "Enter full applicant name",
