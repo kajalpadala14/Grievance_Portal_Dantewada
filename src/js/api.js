@@ -36,7 +36,7 @@ export async function getInitialData() {
         config = { ...DEFAULT_CONFIG, ...parsed };
       } else {
         localStorage.removeItem(LOCAL_CONFIG_KEY);
-        config = { ...DEFAULT_CONFIG, locations: {}, blocks: [] };
+        config = { ...DEFAULT_CONFIG };
       }
     } catch (e) {
       config = DEFAULT_CONFIG;
@@ -67,10 +67,10 @@ export async function getInitialData() {
               isFromSheet: true,
               locations: (result.config.locations && Object.keys(result.config.locations).length > 0)
                 ? result.config.locations
-                : {},
+                : DEFAULT_CONFIG.locations,
               blocks: (result.config.blocks && result.config.blocks.length > 0)
                 ? result.config.blocks
-                : []
+                : DEFAULT_CONFIG.blocks
             };
             localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(config));
             console.log('[API] Loaded configuration from Google Sheet:', config);

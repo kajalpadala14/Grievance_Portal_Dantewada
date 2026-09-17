@@ -1160,12 +1160,14 @@ textarea {
     z-index: 9999;
     padding: 20px;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 0.25s ease;
 }
 
 .modal-overlay.show {
     display: flex;
     opacity: 1;
+    pointer-events: auto;
 }
 
 .modal-card {
