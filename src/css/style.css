@@ -778,6 +778,54 @@ body {
     color: #166534;
 }
 
+/* Aadhaar Mode Selector */
+.aadhar-mode-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.aadhar-mode-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
+}
+
+.aadhar-mode-label input[type="radio"] {
+    display: none;
+}
+
+.aadhar-mode-label .mode-pill {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
+    background: var(--slate-100);
+    color: var(--slate-600);
+    border: 1.5px solid var(--slate-300);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.aadhar-mode-label .mode-pill:hover {
+    background: var(--slate-200);
+    border-color: var(--slate-400);
+}
+
+.aadhar-mode-label input[type="radio"]:checked + .mode-pill {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #2563eb;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15);
+    font-weight: 700;
+}
+
 .village-input-wrap {
     position: relative;
     display: flex;
@@ -1698,6 +1746,23 @@ textarea {
 
 [data-theme="dark"] .digit-count-hint.hint-complete strong {
     color: #bbf7d0;
+}
+
+[data-theme="dark"] .aadhar-mode-label .mode-pill {
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--slate-300);
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .aadhar-mode-label .mode-pill:hover {
+    background: rgba(148, 163, 184, 0.2);
+    border-color: rgba(148, 163, 184, 0.4);
+}
+
+[data-theme="dark"] .aadhar-mode-label input[type="radio"]:checked + .mode-pill {
+    background: rgba(59, 130, 246, 0.25);
+    color: #93c5fd;
+    border-color: #60a5fa;
 }
 
 [data-theme="dark"] .btn-clear-village {

@@ -891,6 +891,132 @@ function updateEnrollmentCounter() {
     }
 }
 
+/**
+ * Live digit counter & hint for Aadhaar Number (supports 4 digits or 12 digits option)
+ */
+function updateAadharCounter() {
+    const aadharInput = document.getElementById('aadhar');
+    const aadharCounter = document.getElementById('aadharCounter');
+    const aadharHint = document.getElementById('aadharHint');
+
+    if (!aadharInput) return;
+    const count = (aadharInput.value || '').length;
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
+    const checkedRadio = document.querySelector('input[name="aadharMode"]:checked');
+    const mode = checkedRadio ? checkedRadio.value : '12';
+
+    if (aadharCounter) {
+        aadharCounter.classList.remove('count-zero', 'count-partial', 'count-complete');
+        if (mode === '4') {
+            if (count === 0) {
+                aadharCounter.textContent = lang === 'en' ? '0 / 4 digits' : '0 / 4 अंक';
+                aadharCounter.classList.add('count-zero');
+            } else if (count < 4) {
+                aadharCounter.textContent = lang === 'en' ? `${count} / 4 digits (${4 - count} left)` : `${count} / 4 अंक (${4 - count} शेष)`;
+                aadharCounter.classList.add('count-partial');
+            } else {
+                aadharCounter.textContent = lang === 'en' ? '✓ 4 / 4 Complete' : '✓ 4 / 4 अंक पूर्ण';
+                aadharCounter.classList.add('count-complete');
+            }
+        } else {
+            // 12 digits mode (or either 4 or 12 digits)
+            if (count === 0) {
+                aadharCounter.textContent = lang === 'en' ? '0 / 12 digits (or 4)' : '0 / 12 अंक (या 4)';
+                aadharCounter.classList.add('count-zero');
+            } else if (count < 4) {
+                aadharCounter.textContent = lang === 'en' ? `${count} / 12 digits` : `${count} / 12 अंक`;
+                aadharCounter.classList.add('count-partial');
+            } else if (count === 4) {
+                aadharCounter.textContent = lang === 'en' ? '✓ 4 digits valid (or 12)' : '✓ 4 अंक मान्य (या 12)';
+                aadharCounter.classList.add('count-complete');
+            } else if (count < 12) {
+                aadharCounter.textContent = lang === 'en' ? `${count} / 12 digits (${12 - count} left)` : `${count} / 12 अंक (${12 - count} शेष)`;
+                aadharCounter.classList.add('count-partial');
+            } else {
+                aadharCounter.textContent = lang === 'en' ? '✓ 12 / 12 Complete' : '✓ 12 / 12 अंक पूर्ण';
+                aadharCounter.classList.add('count-complete');
+            }
+        }
+    }
+
+    if (aadharHint) {
+        aadharHint.classList.remove('hint-zero', 'hint-partial', 'hint-complete');
+        if (mode === '4') {
+            if (count === 0) {
+                aadharHint.innerHTML = lang === 'en'
+                    ? 'Enter last 4 digits of Aadhaar (currently <strong>0</strong> entered)'
+                    : 'आधार के अंतिम 4 अंक दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)';
+                aadharHint.classList.add('hint-zero');
+            } else if (count < 4) {
+                aadharHint.innerHTML = lang === 'en'
+                    ? `Entered digits: <strong>${count}</strong> / 4 (still need <strong>${4 - count}</strong> more digits)`
+                    : `दर्ज अंक: <strong>${count}</strong> / 4 (अभी <strong>${4 - count}</strong> अंक और भरने हैं)`;
+                aadharHint.classList.add('hint-partial');
+            } else {
+                aadharHint.innerHTML = lang === 'en'
+                    ? '✓ <strong>Last 4 digits complete</strong>'
+                    : '✓ <strong>अंतिम 4 अंक पूरे हो चुके हैं</strong>';
+                aadharHint.classList.add('hint-complete');
+            }
+        } else {
+            if (count === 0) {
+                aadharHint.innerHTML = lang === 'en'
+                    ? 'Enter full 12-digit Aadhaar number or last 4 digits (currently <strong>0</strong> entered)'
+                    : '12 अंकों का पूरा आधार नंबर या अंतिम 4 अंक दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)';
+                aadharHint.classList.add('hint-zero');
+            } else if (count < 4) {
+                aadharHint.innerHTML = lang === 'en'
+                    ? `Entered digits: <strong>${count}</strong> (need <strong>${4 - count}</strong> for last-4, or up to 12)`
+                    : `दर्ज अंक: <strong>${count}</strong> (अंतिम 4 अंकों हेतु <strong>${4 - count}</strong> और, या पूरे 12 अंक)`;
+                aadharHint.classList.add('hint-partial');
+            } else if (count === 4) {
+                aadharHint.innerHTML = lang === 'en'
+                    ? '✓ <strong>4 digits (Last 4 digits) valid</strong> (or you may enter up to 12 digits)'
+                    : '✓ <strong>4 अंक (अंतिम 4 अंक) मान्य हैं</strong> (आप चाहें तो पूरे 12 अंक भी दर्ज कर सकते हैं)';
+                aadharHint.classList.add('hint-complete');
+            } else if (count < 12) {
+                aadharHint.innerHTML = lang === 'en'
+                    ? `Entered digits: <strong>${count}</strong> / 12 (still need <strong>${12 - count}</strong> more for full Aadhaar)`
+                    : `दर्ज अंक: <strong>${count}</strong> / 12 (पूरे 12 अंकों हेतु <strong>${12 - count}</strong> अंक और भरने हैं)`;
+                aadharHint.classList.add('hint-partial');
+            } else {
+                aadharHint.innerHTML = lang === 'en'
+                    ? '✓ <strong>Full 12-digit Aadhaar complete</strong>'
+                    : '✓ <strong>12 अंकों का पूरा आधार नंबर पूर्ण हो चुका है</strong>';
+                aadharHint.classList.add('hint-complete');
+            }
+        }
+    }
+}
+
+/**
+ * Handle switching between 4-digit and 12-digit Aadhaar input mode
+ */
+function setAadharMode(mode) {
+    const aadharInput = document.getElementById('aadhar');
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
+    const radio = document.querySelector(`input[name="aadharMode"][value="${mode}"]`);
+    if (radio && !radio.checked) {
+        radio.checked = true;
+    }
+
+    if (aadharInput) {
+        if (mode === '4') {
+            aadharInput.maxLength = 4;
+            aadharInput.pattern = "[0-9]{4}";
+            aadharInput.placeholder = lang === 'en' ? 'Enter last 4 digits (e.g. 1234)' : 'अंतिम 4 अंक दर्ज करें (उदा. 1234)';
+            if (aadharInput.value.length > 4) {
+                aadharInput.value = aadharInput.value.slice(-4);
+            }
+        } else {
+            aadharInput.maxLength = 12;
+            aadharInput.pattern = "([0-9]{4}|[0-9]{12})";
+            aadharInput.placeholder = lang === 'en' ? '12-digit Aadhaar number or last 4 digits' : '12 अंकों का आधार नंबर या अंतिम 4 अंक';
+        }
+        updateAadharCounter();
+    }
+}
+
 let isResettingForm = false;
 
 /**
@@ -910,6 +1036,18 @@ function resetGrievanceForm(isFromNativeReset = false) {
         handleBlockChange();
         setDefaultDate();
         updateEnrollmentCounter();
+
+        // Reset Aadhaar mode to 12 digits default
+        const aadharMode12Radio = document.querySelector('input[name="aadharMode"][value="12"]');
+        if (aadharMode12Radio) {
+            aadharMode12Radio.checked = true;
+        }
+        const aadharInput = document.getElementById('aadhar');
+        if (aadharInput) {
+            aadharInput.maxLength = 12;
+            aadharInput.pattern = "([0-9]{4}|[0-9]{12})";
+        }
+        updateAadharCounter();
 
         // Reset status radio to first status option
         const firstStatusRadio = document.querySelector('input[name="status"]');
@@ -1002,13 +1140,35 @@ function setupEventListeners() {
         });
     }
 
-    // 2. Aadhaar number: numbers only, max 12 digits
+    // 2. Aadhaar number: numbers only, max 4 or 12 digits depending on selected mode
     const aadharInput = document.getElementById('aadhar');
     if (aadharInput) {
         aadharInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 12);
+            const checkedRadio = document.querySelector('input[name="aadharMode"]:checked');
+            const maxLen = checkedRadio && checkedRadio.value === '4' ? 4 : 12;
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, maxLen);
+            updateAadharCounter();
+        });
+        aadharInput.addEventListener('paste', () => {
+            setTimeout(() => {
+                if (aadharInput) {
+                    const checkedRadio = document.querySelector('input[name="aadharMode"]:checked');
+                    const maxLen = checkedRadio && checkedRadio.value === '4' ? 4 : 12;
+                    aadharInput.value = aadharInput.value.replace(/\D/g, '').slice(0, maxLen);
+                    updateAadharCounter();
+                }
+            }, 10);
         });
     }
+
+    // Aadhaar mode selector radio buttons
+    const aadharModeRadios = document.querySelectorAll('input[name="aadharMode"]');
+    aadharModeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            setAadharMode(e.target.value);
+        });
+    });
+    updateAadharCounter();
 
     // 3. Enrollment number: alphanumeric (letters + numbers), max 28 characters
     const enrollmentInput = document.getElementById('enrollment');
@@ -1175,11 +1335,24 @@ async function handleFormSubmit(e) {
         return;
     }
 
-    // 2. Aadhaar Validation: If provided, must be exactly 12 digits
-    if (aadharVal && aadharVal.length !== 12) {
-        alert('⚠️ आधार नंबर ठीक 12 अंकों का होना चाहिए।\nAadhaar number must be exactly 12 digits.');
-        document.getElementById('aadhar').focus();
-        return;
+    // 2. Aadhaar Validation: If provided, must be either 4 digits (last 4) or 12 digits
+    if (aadharVal) {
+        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
+        const checkedMode = document.querySelector('input[name="aadharMode"]:checked')?.value || '12';
+        if (checkedMode === '4' && aadharVal.length !== 4) {
+            alert(lang === 'en'
+                ? `⚠️ Last 4 digits of Aadhaar must be exactly 4 digits.\nCurrent length: ${aadharVal.length}`
+                : `⚠️ आधार के अंतिम 4 अंक ठीक 4 अंकों के होने चाहिए।\nवर्तमान में ${aadharVal.length} अंक दर्ज हैं।`);
+            document.getElementById('aadhar').focus();
+            return;
+        }
+        if (aadharVal.length !== 4 && aadharVal.length !== 12) {
+            alert(lang === 'en'
+                ? `⚠️ Aadhaar number must be either 4 digits (last 4 digits) or 12 digits.\nCurrent length: ${aadharVal.length}`
+                : `⚠️ आधार नंबर या तो 4 अंक (अंतिम 4 अंक) या पूरे 12 अंकों का होना चाहिए।\nवर्तमान में ${aadharVal.length} अंक दर्ज हैं।`);
+            document.getElementById('aadhar').focus();
+            return;
+        }
     }
 
     // 3. Enrollment Validation: If provided, must be exactly 28 characters
@@ -1634,6 +1807,16 @@ window.__onLanguageChanged = function(lang) {
     updateDashboard();
     displayGrievances();
     updateEnrollmentCounter();
+    updateAadharCounter();
+    const checkedMode = document.querySelector('input[name="aadharMode"]:checked')?.value || '12';
+    const aadharInput = document.getElementById('aadhar');
+    if (aadharInput) {
+        if (checkedMode === '4') {
+            aadharInput.placeholder = lang === 'en' ? 'Enter last 4 digits (e.g. 1234)' : 'अंतिम 4 अंक दर्ज करें (उदा. 1234)';
+        } else {
+            aadharInput.placeholder = lang === 'en' ? '12-digit Aadhaar number or last 4 digits' : '12 अंकों का आधार नंबर या अंतिम 4 अंक';
+        }
+    }
 };
 
 // Start app on DOM ready

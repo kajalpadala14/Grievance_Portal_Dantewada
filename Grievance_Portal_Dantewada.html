@@ -256,8 +256,22 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="aadhar" data-i18n="lblAadhar">आधार नंबर (12 अंक)</label>
-                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" data-i18n-ph="phAadhar" inputmode="numeric">
+                            <div class="field-header-row">
+                                <label for="aadhar" data-i18n="lblAadhar">आधार नंबर (4 या 12 अंक)</label>
+                                <span class="digit-counter count-zero" id="aadharCounter" title="दर्ज किए गए अंक / Entered digits">0 / 12 अंक</span>
+                            </div>
+                            <div class="aadhar-mode-options" id="aadharModeOptions">
+                                <label class="aadhar-mode-label">
+                                    <input type="radio" name="aadharMode" value="12" checked>
+                                    <span class="mode-pill" data-i18n="aadharMode12">12 अंक (पूरा आधार)</span>
+                                </label>
+                                <label class="aadhar-mode-label">
+                                    <input type="radio" name="aadharMode" value="4">
+                                    <span class="mode-pill" data-i18n="aadharMode4">4 अंक (अंतिम 4 अंक)</span>
+                                </label>
+                            </div>
+                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="([0-9]{4}|[0-9]{12})" placeholder="12 अंकों का आधार नंबर या अंतिम 4 अंक" data-i18n-ph="phAadhar" inputmode="numeric" autocomplete="off">
+                            <small class="digit-count-hint hint-zero" id="aadharHint">12 अंकों का पूरा आधार नंबर या अंतिम 4 अंक दर्ज करें (अभी <strong>0</strong> अंक दर्ज हैं)</small>
                         </div>
                         <div class="form-group">
                             <div class="field-header-row">
