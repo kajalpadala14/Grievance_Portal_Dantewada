@@ -1,3 +1,4 @@
+import { getCurrentLanguage, applyLanguage, toggleLanguage, TRANSLATIONS } from './i18n.js';
 import { getInitialData, submitGrievance, APPS_SCRIPT_URL, fetchLocationsFromSheet } from './api.js';
 import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
 
@@ -38,11 +39,13 @@ function updateThemeToggleButton(theme) {
     const text = document.getElementById('themeToggleText');
     if (!btn) return;
 
+    const currentLang = getCurrentLanguage();
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.hi;
     const isDark = theme === 'dark';
     if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-    if (text) text.textContent = isDark ? 'लाइट मोड | Light' : 'डार्क मोड | Dark';
-    btn.setAttribute('aria-label', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-    btn.setAttribute('title', isDark ? 'लाइट मोड में बदलें | Switch to Light Mode' : 'डार्क मोड में बदलें | Switch to Dark Mode');
+    if (text) text.textContent = isDark ? t.themeLight : t.themeDark;
+    btn.setAttribute('aria-label', isDark ? (currentLang === 'en' ? 'Switch to Light Mode' : 'लाइट मोड में बदलें') : (currentLang === 'en' ? 'Switch to Dark Mode' : 'डार्क मोड में बदलें'));
+    btn.setAttribute('title', isDark ? (currentLang === 'en' ? 'Switch to Light Mode' : 'लाइट मोड में बदलें') : (currentLang === 'en' ? 'Switch to Dark Mode' : 'डार्क मोड में बदलें'));
 }
 
 let _themeThrottleLock = false;
@@ -89,6 +92,7 @@ function initTheme() {
  */
 async function init() {
     initTheme();
+    applyLanguage(getCurrentLanguage());
     setDefaultDate();
     setupEventListeners();
     startLiveClock();
@@ -147,7 +151,8 @@ function startLiveClock() {
             second: '2-digit', 
             hour12: true 
         };
-        timeEl.textContent = '🕒 ' + now.toLocaleString('hi-IN', options);
+        const currentLang = getCurrentLanguage();
+        timeEl.textContent = '🕒 ' + now.toLocaleString(currentLang === 'en' ? 'en-IN' : 'hi-IN', options);
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -175,6 +180,8 @@ function applyPortalConfig(config) {
  */
 function renderFormOptions(config) {
     if (!config) return;
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
 
     // 1. Populate Block Dropdown (from config.locations hierarchy or config.blocks)
     const blockSelect = document.getElementById('block');
@@ -186,14 +193,14 @@ function renderFormOptions(config) {
         const currentValue = blockSelect.value;
         let html = '';
         if (blocksList.length === 0) {
-            html = '<option value="">-- शीट से लोड हो रहा है... / Loading from Sheet... --</option>';
+            html = `<option value="">${lang === 'en' ? '-- Loading from Sheet... --' : '-- शीट से लोड हो रहा है... --'}</option>`;
         } else {
-            html = '<option value="">-- चयन करें / Select Block --</option>';
+            html = `<option value="">${t.optSelectBlock}</option>`;
             blocksList.forEach(b => {
                 const isSelected = b.value === currentValue ? 'selected' : '';
                 html += `<option value="${escapeHtml(b.value)}" ${isSelected}>${escapeHtml(b.label || b.value)}</option>`;
             });
-            html += '<option value="__OTHER__">➕ अन्य / Other (मैन्युअल दर्ज करें)</option>';
+            html += `<option value="__OTHER__">${t.optOther}</option>`;
         }
         blockSelect.innerHTML = html;
 
@@ -207,7 +214,7 @@ function renderFormOptions(config) {
     const reasonSelect = document.getElementById('reason');
     if (reasonSelect && Array.isArray(config.reasons)) {
         const currentValue = reasonSelect.value;
-        let html = '<option value="">-- कारण चुनें / Select Reason --</option>';
+        let html = `<option value="">${t.optSelectReason}</option>`;
         config.reasons.forEach(r => {
             const isSelected = r.value === currentValue ? 'selected' : '';
             html += `<option value="${escapeHtml(r.value)}" ${isSelected}>${escapeHtml(r.label || r.value)}</option>`;
@@ -236,7 +243,7 @@ function renderFormOptions(config) {
     // 4. Populate Status Filter Dropdown in Table Toolbar
     const statusFilterSelect = document.getElementById('statusFilterSelect');
     if (statusFilterSelect && Array.isArray(config.statuses)) {
-        let html = '<option value="">सभी स्थितियां | All Statuses</option>';
+        let html = `<option value="">${t.optAllStatuses}</option>`;
         config.statuses.forEach(s => {
             html += `<option value="${escapeHtml(s.id)}">${escapeHtml(s.label || s.id)}</option>`;
         });
@@ -588,17 +595,18 @@ function updateEnrollmentCounter() {
 
     if (!enrollmentInput) return;
     const count = (enrollmentInput.value || '').length;
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
 
     if (enrollmentCounter) {
         enrollmentCounter.classList.remove('count-zero', 'count-partial', 'count-complete');
         if (count === 0) {
-            enrollmentCounter.textContent = '0 / 28 अंक';
+            enrollmentCounter.textContent = lang === 'en' ? '0 / 28 digits' : '0 / 28 अंक';
             enrollmentCounter.classList.add('count-zero');
         } else if (count < 28) {
-            enrollmentCounter.textContent = `${count} / 28 अंक (${28 - count} शेष)`;
+            enrollmentCounter.textContent = lang === 'en' ? `${count} / 28 digits (${28 - count} left)` : `${count} / 28 अंक (${28 - count} शेष)`;
             enrollmentCounter.classList.add('count-partial');
         } else {
-            enrollmentCounter.textContent = '✓ 28 / 28 अंक पूर्ण';
+            enrollmentCounter.textContent = lang === 'en' ? '✓ 28 / 28 Complete' : '✓ 28 / 28 अंक पूर्ण';
             enrollmentCounter.classList.add('count-complete');
         }
     }
@@ -606,13 +614,19 @@ function updateEnrollmentCounter() {
     if (enrollmentHint) {
         enrollmentHint.classList.remove('hint-zero', 'hint-partial', 'hint-complete');
         if (count === 0) {
-            enrollmentHint.innerHTML = '28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)';
+            enrollmentHint.innerHTML = lang === 'en'
+                ? 'Enter 28-digit Enrollment Number (currently <strong>0</strong> digits entered)'
+                : '28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)';
             enrollmentHint.classList.add('hint-zero');
         } else if (count < 28) {
-            enrollmentHint.innerHTML = `दर्ज किए गए अंक: <strong>${count}</strong> / 28 (अभी <strong>${28 - count}</strong> अंक और भरने हैं)`;
+            enrollmentHint.innerHTML = lang === 'en'
+                ? `Entered digits: <strong>${count}</strong> / 28 (still need <strong>${28 - count}</strong> more digits)`
+                : `दर्ज किए गए अंक: <strong>${count}</strong> / 28 (अभी <strong>${28 - count}</strong> अंक और भरने हैं)`;
             enrollmentHint.classList.add('hint-partial');
         } else {
-            enrollmentHint.innerHTML = '✓ <strong>28 अंक पूरे हो चुके हैं</strong> | Enrollment number is complete';
+            enrollmentHint.innerHTML = lang === 'en'
+                ? '✓ <strong>28 digits complete</strong>'
+                : '✓ <strong>28 अंक पूरे हो चुके हैं</strong>';
             enrollmentHint.classList.add('hint-complete');
         }
     }
@@ -956,12 +970,14 @@ function openSubmissionModal(grievance, synced) {
     if (nameEl) nameEl.textContent = grievance.applicantName || '-';
 
     if (statusEl) {
+        const lang = getCurrentLanguage();
+        const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
         if (synced) {
             statusEl.className = 'modal-status-badge synced';
-            statusEl.textContent = '✓ Google Sheet में दर्ज';
+            statusEl.textContent = t.modalSynced;
         } else {
             statusEl.className = 'modal-status-badge local';
-            statusEl.textContent = '⚠️ केवल स्थानीय सुरक्षित (Offline)';
+            statusEl.textContent = t.modalOffline;
         }
     }
 
@@ -1023,14 +1039,16 @@ function renderDashboardCards(total, statuses, data) {
     const grid = document.getElementById('dashboardGrid');
     if (!grid) return;
 
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
     let html = `
         <div class="stat-card stat-card-total">
             <div class="stat-card-header">
-                <span class="stat-label">कुल शिकायतें | Total Grievances</span>
+                <span class="stat-label">${t.kpiTotal}</span>
                 <span class="stat-icon-badge total-badge">📊</span>
             </div>
             <div class="stat-number">${total}</div>
-            <div class="stat-meta">सभी पंजीकृत आवेदन</div>
+            <div class="stat-meta">${t.kpiTotalMeta}</div>
         </div>
     `;
 
@@ -1052,7 +1070,7 @@ function renderDashboardCards(total, statuses, data) {
                     <span class="stat-icon-badge" style="background-color: ${color}15; color: ${color};">${icon}</span>
                 </div>
                 <div class="stat-number" style="color: ${color};">${count}</div>
-                <div class="stat-meta">स्थिति: ${escapeHtml(status.id)}</div>
+                <div class="stat-meta">${t.kpiStatusMeta}${escapeHtml(status.id)}</div>
             </div>
         `;
     });
@@ -1129,7 +1147,9 @@ function renderChart(containerId, data, maxValue) {
     container.innerHTML = '';
 
     if (data.length === 0 || data.every(d => d.value === 0)) {
-        container.innerHTML = '<div class="chart-empty-state">📊 कोई डेटा उपलब्ध नहीं | No data recorded yet</div>';
+        const lang = getCurrentLanguage();
+        const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+        container.innerHTML = `<div class="chart-empty-state">${t.chartEmptyState}</div>`;
         return;
     }
 
@@ -1185,23 +1205,24 @@ function displayGrievances() {
         return matchesSearch && matchesStatus;
     });
 
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+
     if (countBadge) {
-        countBadge.textContent = `${filtered.length} शिकायतें | ${filtered.length} Records`;
+        countBadge.textContent = `${t.showingPrefix} ${filtered.length} ${t.showingSuffix}`;
     }
 
     if (filtered.length === 0) {
         if (grievances.length === 0) {
             container.innerHTML = `
                 <div class="empty-message">
-                    🔍 कोई शिकायत नहीं मिली | No grievances found<br>
-                    नई शिकायतें यहाँ दिखाई देंगी | New grievances will appear here
+                    ${t.tableEmpty}
                 </div>
             `;
         } else {
             container.innerHTML = `
                 <div class="empty-message">
-                    🔍 खोजे गए विवरण से कोई शिकायत मेल नहीं खाती | No matching grievances found<br>
-                    कृपया अन्य नाम, फ़ोन या कारण से खोजें | Try searching with another term
+                    ${t.tableEmptySearch}
                 </div>
             `;
         }
@@ -1213,12 +1234,12 @@ function displayGrievances() {
             <table class="grievance-table">
                 <thead>
                     <tr>
-                        <th>आवेदक | Applicant</th>
-                        <th>ब्लॉक/स्थान | Block/Location</th>
-                        <th>कारण | Reason</th>
-                        <th>तारीख | Date</th>
-                        <th>स्थिति | Status</th>
-                        <th>विवरण | Description</th>
+                        <th>${t.thApplicant}</th>
+                        <th>${t.thLocation}</th>
+                        <th>${t.thReason}</th>
+                        <th>${t.thDate}</th>
+                        <th>${t.thStatus}</th>
+                        <th>${t.thDescription}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1271,7 +1292,8 @@ function formatDate(dateStr) {
     if (!dateStr) return '';
     try {
         const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? dateStr : date.toLocaleDateString('hi-IN');
+        const lang = getCurrentLanguage();
+        return isNaN(date.getTime()) ? dateStr : date.toLocaleDateString(lang === 'en' ? 'en-IN' : 'hi-IN');
     } catch (e) {
         return dateStr;
     }
@@ -1280,6 +1302,17 @@ function formatDate(dateStr) {
 // Bind to window for HTML inline onclick handlers
 window.switchTab = switchTab;
 window.toggleTheme = toggleTheme;
+window.toggleLanguage = toggleLanguage;
+window.__toggleLanguage = toggleLanguage;
+
+// Hook called by i18n.js when language changes
+window.__onLanguageChanged = function(lang) {
+    updateThemeToggleButton(getCurrentTheme());
+    renderFormOptions(currentConfig);
+    updateDashboard();
+    displayGrievances();
+    updateEnrollmentCounter();
+};
 
 // Start app on DOM ready
 window.addEventListener('DOMContentLoaded', init);

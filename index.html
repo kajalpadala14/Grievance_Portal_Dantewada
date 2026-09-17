@@ -1,63 +1,91 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="hi" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aadhaar शिकायत पोर्टल - दक्षिण बस्तर दंतेवाडा</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0b1e36">
+    <meta name="description" content="Public Grievance Portal, South Bastar Dantewada - File and track Aadhaar grievances online.">
+    <title>Aadhaar Grievance Portal | जिला प्रशासन दंतेवाडा</title>
+    
     <!-- External CSS -->
     <link rel="stylesheet" href="src/css/style.css">
-    <!-- Immediate Theme Initialization & Toggle Handler -->
+    
+    <!-- Google Fonts for crisp Hindi & English typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tiro+Devanagari+Hindi:ital@0;1&display=swap" rel="stylesheet">
+
     <script>
-        var THEME_KEY = 'dantewada_portal_theme';
+        // Apply stored theme & language immediately to prevent flashing
+        const THEME_STORAGE_KEY = 'dantewada_portal_theme';
+        const LANG_STORAGE_KEY = 'dantewada_portal_lang';
+
+        function getStoredLang() {
+            try {
+                const saved = localStorage.getItem(LANG_STORAGE_KEY);
+                if (saved === 'en' || saved === 'hi') return saved;
+            } catch (e) {}
+            return 'hi';
+        }
 
         function getStoredTheme() {
             try {
-                // Clear any old keys from previous test sessions
                 if (localStorage.getItem('portal-theme')) {
                     localStorage.removeItem('portal-theme');
                 }
-                var saved = localStorage.getItem(THEME_KEY);
+                const saved = localStorage.getItem(THEME_STORAGE_KEY);
                 if (saved === 'dark' || saved === 'light') return saved;
             } catch (e) {}
-            return 'light'; // Default is 100% Light Mode
+            return 'light';
         }
 
         function applyPortalTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
-            var icon = document.getElementById('themeToggleIcon');
-            var text = document.getElementById('themeToggleText');
-            var btn = document.getElementById('themeToggleBtn');
-            var isDark = theme === 'dark';
-            if (icon) icon.textContent = isDark ? '☀️' : '🌙';
-            if (text) text.textContent = isDark ? 'लाइट मोड | Light' : 'डार्क मोड | Dark';
-            if (btn) {
-                btn.setAttribute('aria-label', isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-                btn.setAttribute('title', isDark ? 'लाइट मोड में बदलें | Switch to Light Mode' : 'डार्क मोड में बदलें | Switch to Dark Mode');
+            const icon = document.getElementById('themeToggleIcon');
+            const text = document.getElementById('themeToggleText');
+            if (icon && text) {
+                const isDark = theme === 'dark';
+                icon.textContent = isDark ? '☀️' : '🌙';
+                const lang = getStoredLang();
+                text.textContent = isDark ? (lang === 'en' ? 'Light Mode' : 'लाइट मोड') : (lang === 'en' ? 'Dark Mode' : 'डार्क मोड');
             }
         }
 
-        var _themeThrottle = false;
         function toggleTheme(e) {
             if (e && e.preventDefault) e.preventDefault();
-            if (_themeThrottle) return;
-            _themeThrottle = true;
-            setTimeout(function() { _themeThrottle = false; }, 200);
-
-            var current = document.documentElement.getAttribute('data-theme') || 'light';
-            var nextTheme = (current === 'dark') ? 'light' : 'dark';
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const nextTheme = current === 'dark' ? 'light' : 'dark';
             try {
-                localStorage.setItem(THEME_KEY, nextTheme);
+                localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
             } catch (err) {}
             applyPortalTheme(nextTheme);
         }
 
-        // Apply theme immediately before page render
+        function toggleLanguage(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            if (window.__toggleLanguage) {
+                window.__toggleLanguage(e);
+            } else {
+                const current = getStoredLang();
+                const nextLang = current === 'hi' ? 'en' : 'hi';
+                try {
+                    localStorage.setItem(LANG_STORAGE_KEY, nextLang);
+                } catch (err) {}
+                location.reload();
+            }
+        }
+
+        // Apply theme & language immediately before page render
         try {
+            document.documentElement.setAttribute('lang', getStoredLang());
             applyPortalTheme(getStoredTheme());
         } catch (e) {}
 
-        // Ensure icon & label are in sync once DOM is ready
+        // Ensure button labels are in sync once DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
+            const lang = getStoredLang();
+            const langText = document.getElementById('langToggleText');
+            if (langText) langText.textContent = lang === 'en' ? 'हिन्दी' : 'English';
             applyPortalTheme(document.documentElement.getAttribute('data-theme') || getStoredTheme());
         });
     </script>
@@ -67,25 +95,31 @@
         <!-- Top Tricolor Ribbon -->
         <div class="top-tricolor-bar"></div>
 
-        <!-- Header (Dynamic content populated via JavaScript) -->
+        <!-- Header -->
         <header class="header">
             <div class="header-inner">
                 <div class="header-brand">
                     <div class="header-emblem">🏛️</div>
                     <div>
-                        <span class="gov-tag">जिला प्रशासन दक्षिण बस्तर दंतेवाडा | District Administration Dantewada</span>
-                        <h1 id="portalTitle">🔴 Aadhaar शिकायत पोर्टल</h1>
-                        <p id="portalSubtitle">दक्षिण बस्तर जिला, दंतेवाडा | Public Grievance Portal, South Bastar Dantewada</p>
+                        <span class="gov-tag" data-i18n="govTag">जिला प्रशासन दक्षिण बस्तर दंतेवाडा</span>
+                        <h1 id="portalTitle" data-i18n="portalTitle">🔴 Aadhaar शिकायत पोर्टल</h1>
+                        <p id="portalSubtitle" data-i18n="portalSubtitle">दक्षिण बस्तर जिला, दंतेवाडा | समाधान एवं निगरानी प्रणाली</p>
                     </div>
                 </div>
                 <div class="header-badge-box">
-                    <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme(event)" aria-label="Toggle Dark / Light Mode" title="थीम बदलें | Toggle Theme">
-                        <span class="theme-toggle-icon" id="themeToggleIcon">🌙</span>
-                        <span id="themeToggleText">डार्क मोड | Dark</span>
-                    </button>
+                    <div class="header-controls-row">
+                        <button type="button" class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLanguage(event)" aria-label="Switch Language" title="भाषा बदलें | Switch Language">
+                            <span class="lang-toggle-icon">🌐</span>
+                            <span id="langToggleText">English</span>
+                        </button>
+                        <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme(event)" aria-label="Toggle Dark / Light Mode" title="थीम बदलें | Toggle Theme">
+                            <span class="theme-toggle-icon" id="themeToggleIcon">🌙</span>
+                            <span id="themeToggleText">डार्क मोड</span>
+                        </button>
+                    </div>
                     <div class="live-pill">
                         <span class="pulse-dot"></span>
-                        <span>ऑनलाइन पोर्टल | Live Portal</span>
+                        <span data-i18n="liveStatus">ऑनलाइन पोर्टल</span>
                     </div>
                     <div class="header-time" id="livePortalTime"></div>
                 </div>
@@ -97,22 +131,22 @@
             <button class="tab-btn active" data-tab="0" onclick="switchTab(0)">
                 <span class="tab-icon">📊</span>
                 <span class="tab-label-wrap">
-                    <span class="tab-title">डैशबोर्ड</span>
-                    <span class="tab-sub">Dashboard</span>
+                    <span class="tab-title" data-i18n="tabDashboardTitle">डैशबोर्ड</span>
+                    <span class="tab-sub" data-i18n="tabDashboardSub">Dashboard</span>
                 </span>
             </button>
             <button class="tab-btn" data-tab="1" data-nav="form" onclick="switchTab(1)">
                 <span class="tab-icon">📝</span>
                 <span class="tab-label-wrap">
-                    <span class="tab-title">शिकायत दर्ज करें</span>
-                    <span class="tab-sub">File Grievance</span>
+                    <span class="tab-title" data-i18n="tabRegisterTitle">शिकायत दर्ज करें</span>
+                    <span class="tab-sub" data-i18n="tabRegisterSub">File Grievance</span>
                 </span>
             </button>
             <button class="tab-btn" data-tab="2" data-nav="list" onclick="switchTab(2)">
                 <span class="tab-icon">📋</span>
                 <span class="tab-label-wrap">
-                    <span class="tab-title">सभी शिकायतें</span>
-                    <span class="tab-sub">All Grievances</span>
+                    <span class="tab-title" data-i18n="tabAllTitle">सभी शिकायतें</span>
+                    <span class="tab-sub" data-i18n="tabAllSub">All Grievances</span>
                 </span>
                 <span class="tab-badge" id="tabGrievanceCount">0</span>
             </button>
@@ -126,26 +160,26 @@
 
                 <!-- Quick Navigation Action Buttons -->
                 <div class="dashboard-actions">
-                    <button type="button" class="btn-action-primary" onclick="switchTab(1)">
-                        📝 नई शिकायत दर्ज करें | File New Grievance
+                    <button type="button" class="btn-action-primary" onclick="switchTab(1)" data-i18n="btnFileNew">
+                        📝 नई शिकायत दर्ज करें
                     </button>
-                    <button type="button" class="btn-action-secondary" onclick="switchTab(2)">
-                        📋 सभी शिकायतें देखें | View All Grievances
+                    <button type="button" class="btn-action-secondary" onclick="switchTab(2)" data-i18n="btnViewAllGrievances">
+                        📋 सभी शिकायतें देखें
                     </button>
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-title">📈 शिकायत स्थिति वितरण | Grievance Status Distribution</div>
+                    <div class="chart-title" data-i18n="chartStatusTitle">📈 शिकायत स्थिति वितरण</div>
                     <div class="bar-chart" id="barChart"></div>
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-title">📍 ब्लॉक अनुसार शिकायतें | Grievances by Block</div>
+                    <div class="chart-title" data-i18n="chartBlockTitle">📍 ब्लॉक अनुसार शिकायतें</div>
                     <div class="bar-chart" id="blockChart"></div>
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-title">🏷️ कारण अनुसार शिकायतें | Grievances by Reason</div>
+                    <div class="chart-title" data-i18n="chartReasonTitle">🏷️ कारण अनुसार शिकायतें</div>
                     <div class="bar-chart" id="reasonChart"></div>
                 </div>
 
@@ -158,95 +192,94 @@
                 </div>
 
                 <div class="info-box">
-                    <strong>महत्वपूर्ण सूचना:</strong> कृपया सभी आवश्यक (*) क्षेत्र भरें। आपकी शिकायत 48 घंटे में प्रक्रिया की जाएगी।<br>
-                    <strong>Important Notice:</strong> Please fill all required (*) fields. Your grievance will be processed within 48 hours.
+                    <strong data-i18n="noticeHeading">महत्वपूर्ण सूचना:</strong> <span data-i18n="noticeBody">कृपया सभी आवश्यक (*) क्षेत्र भरें। आपकी शिकायत 48 घंटे में प्रक्रिया की जाएगी।</span>
                 </div>
 
                 <form id="grievanceForm">
                     <!-- Personal Information Section -->
-                    <div class="section-title">👤 व्यक्तिगत जानकारी | Personal Information</div>
+                    <div class="section-title" data-i18n="secPersonal">👤 व्यक्तिगत जानकारी</div>
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="applicantName" class="required">हितग्राही / आवेदक का नाम | Applicant Name</label>
-                            <input type="text" id="applicantName" name="applicantName" placeholder="पूरा नाम दर्ज करें" required>
+                            <label for="applicantName" class="required" data-i18n="lblApplicantName">हितग्राही / आवेदक का नाम</label>
+                            <input type="text" id="applicantName" name="applicantName" placeholder="पूरा नाम दर्ज करें" data-i18n-ph="phApplicantName" required>
                         </div>
                         <div class="form-group">
-                            <label for="fatherName">पिता/पति का नाम | Father/Husband Name</label>
-                            <input type="text" id="fatherName" name="fatherName" placeholder="नाम दर्ज करें">
+                            <label for="fatherName" data-i18n="lblFatherName">पिता/पति का नाम</label>
+                            <input type="text" id="fatherName" name="fatherName" placeholder="नाम दर्ज करें" data-i18n-ph="phFatherName">
                         </div>
                     </div>
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="age">आयु | Age</label>
-                            <input type="number" id="age" name="age" min="0" max="120" placeholder="आयु दर्ज करें">
+                            <label for="age" data-i18n="lblAge">आयु</label>
+                            <input type="number" id="age" name="age" min="0" max="120" placeholder="आयु दर्ज करें" data-i18n-ph="phAge">
                         </div>
                         <div class="form-group">
-                            <label for="phone">दूरभाष | Phone Number (10 अंक)</label>
-                            <input type="tel" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}" placeholder="10 अंकों का मोबाइल नंबर" inputmode="numeric">
+                            <label for="phone" data-i18n="lblPhone">दूरभाष (10 अंक)</label>
+                            <input type="tel" id="phone" name="phone" maxlength="10" pattern="[0-9]{10}" placeholder="10 अंकों का मोबाइल नंबर" data-i18n-ph="phPhone" inputmode="numeric">
                         </div>
                     </div>
 
                     <!-- Address Information Section -->
-                    <div class="section-title">📍 पता जानकारी | Address Information</div>
+                    <div class="section-title" data-i18n="secAddress">📍 पता जानकारी</div>
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="block" class="required">ब्लॉक | Block</label>
-                            <!-- Dynamically populated from config / Sheet -->
+                            <label for="block" class="required" data-i18n="lblBlock">ब्लॉक</label>
                             <select id="block" name="block" required>
                                 <option value="">-- चयन करें / Select Block --</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="panchayat" class="required">ग्राम पंचायत | Village Panchayat</label>
+                            <label for="panchayat" class="required" data-i18n="lblPanchayat">ग्राम पंचायत</label>
                             <select id="panchayat" name="panchayat" required disabled>
-                                <option value="">-- पहले ब्लॉक चुनें / Select Block First --</option>
+                                <option value="">-- पहले ब्लॉक चुनें --</option>
                             </select>
-                            <input type="text" id="panchayatCustom" name="panchayatCustom" placeholder="ग्राम पंचायत का नाम लिखें / Enter Panchayat" style="display: none; margin-top: 8px;">
+                            <input type="text" id="panchayatCustom" name="panchayatCustom" placeholder="ग्राम पंचायत का नाम लिखें" data-i18n-ph="phPanchayatCustom" style="display: none; margin-top: 8px;">
                         </div>
                     </div>
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="village" class="required">ग्राम | Village</label>
+                            <label for="village" class="required" data-i18n="lblVillage">ग्राम</label>
                             <div class="village-input-wrap">
-                                <input type="text" id="village" name="village" list="allVillagesDatalist" placeholder="गाँव का नाम लिखें या चुनें" required autocomplete="off">
+                                <input type="text" id="village" name="village" list="allVillagesDatalist" placeholder="गाँव का नाम लिखें या चुनें" data-i18n-ph="phVillage" required autocomplete="off">
                                 <button type="button" class="btn-clear-village" id="clearVillageBtn" style="display: none;" title="साफ करें | Clear">✕</button>
                             </div>
                             <datalist id="allVillagesDatalist"></datalist>
                         </div>
                         <div class="form-group">
-                            <label for="email">ईमेल | Email</label>
-                            <input type="email" id="email" name="email" maxlength="100" placeholder="example@email.com">
+                            <label for="email" data-i18n="lblEmail">ईमेल</label>
+                            <input type="email" id="email" name="email" maxlength="100" placeholder="example@email.com" data-i18n-ph="phEmail">
                         </div>
                     </div>
 
                     <!-- Identity Information Section -->
-                    <div class="section-title">🆔 पहचान जानकारी | Identity Information</div>
+                    <div class="section-title" data-i18n="secIdentity">🆔 पहचान जानकारी</div>
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="aadhar">आधार नंबर | Aadhaar Number (12 अंक)</label>
-                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" inputmode="numeric">
+                            <label for="aadhar" data-i18n="lblAadhar">आधार नंबर (12 अंक)</label>
+                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" data-i18n-ph="phAadhar" inputmode="numeric">
                         </div>
                         <div class="form-group">
+                        <div class="form-group">
                             <div class="field-header-row">
-                                <label for="enrollment">एनरोलमेंट नंबर | Enrollment Number (28 अंक)</label>
+                                <label for="enrollment" data-i18n="lblEnrollment">एनरोलमेंट नंबर (28 अंक)</label>
                                 <span class="digit-counter count-zero" id="enrollmentCounter" title="दर्ज किए गए अंक / Entered digits">0 / 28 अंक</span>
                             </div>
-                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[0-9]{28}" placeholder="28 अंकों का एनरोलमेंट नंबर" inputmode="numeric">
+                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[0-9]{28}" placeholder="28 अंकों का एनरोलमेंट नंबर" data-i18n-ph="phEnrollment" inputmode="numeric">
                             <small class="digit-count-hint hint-zero" id="enrollmentHint">28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)</small>
+                        </div>
                         </div>
                     </div>
 
                     <!-- Grievance Details Section -->
-                    <div class="section-title">📋 शिकायत विवरण | Grievance Details</div>
+                    <div class="section-title" data-i18n="secGrievance">📋 शिकायत विवरण</div>
 
                     <div class="form-group form-grid full">
-                        <label for="reason" class="required">ऑफिस आने का कारण | Reason for Visit/Grievance</label>
-                        <!-- Dynamically populated from config / Sheet -->
+                        <label for="reason" class="required" data-i18n="lblReason">ऑफिस आने का कारण</label>
                         <select id="reason" name="reason" required>
                             <option value="">-- कारण चुनें / Select Reason --</option>
                             <option value="Rajpatra Process Information">Rajpatra Process Information | राजपत्र प्रक्रिया जानकारी</option>
@@ -275,39 +308,38 @@
                     </div>
 
                     <div class="form-group form-grid full">
-                        <label for="description" class="required">विस्तृत विवरण | Detailed Description</label>
-                        <textarea id="description" name="description" placeholder="अपनी शिकायत का विस्तृत विवरण यहाँ दर्ज करें..." required></textarea>
+                        <label for="description" class="required" data-i18n="lblDescription">शिकायत का विस्तृत विवरण</label>
+                        <textarea id="description" name="description" placeholder="अपनी शिकायत का विस्तृत विवरण यहाँ दर्ज करें..." data-i18n-ph="phDescription" required></textarea>
                     </div>
 
                     <!-- Current Status Section -->
-                    <div class="section-title">✓ वर्तमान स्थिति | Current Status</div>
+                    <div class="section-title" data-i18n="secStatus">✓ वर्तमान स्थिति</div>
 
                     <div class="form-group">
-                        <label class="required">स्थिति चुनें | Select Status</label>
-                        <!-- Dynamically populated from config / Sheet -->
+                        <label class="required" data-i18n="lblStatusSelect">स्थिति चुनें</label>
                         <div class="status-options" id="statusOptionsContainer"></div>
                     </div>
 
                     <!-- Remarks Section -->
-                    <div class="section-title">💬 टिप्पणियां | Remarks</div>
+                    <div class="section-title" data-i18n="secRemarks">💬 टिप्पणियां</div>
 
                     <div class="form-group form-grid full">
-                        <label for="remarks">अतिरिक्त टिप्पणियां | Additional Remarks</label>
-                        <textarea id="remarks" name="remarks" placeholder="कोई अतिरिक्त जानकारी यहाँ जोड़ें..."></textarea>
+                        <label for="remarks" data-i18n="lblRemarks">अतिरिक्त टिप्पणियां</label>
+                        <textarea id="remarks" name="remarks" placeholder="कोई अतिरिक्त जानकारी यहाँ जोड़ें..." data-i18n-ph="phRemarks"></textarea>
                     </div>
 
                     <!-- Submission Date -->
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="date" class="required">आवेदन की तारीख | Date of Application</label>
+                            <label for="date" class="required" data-i18n="lblDate">आवेदन की तारीख</label>
                             <input type="date" id="date" name="date" required>
                         </div>
                     </div>
 
                     <!-- Buttons -->
                     <div class="button-group">
-                        <button type="submit" class="btn-submit">✓ जमा करें | SUBMIT</button>
-                        <button type="reset" class="btn-reset">↻ साफ करें | CLEAR</button>
+                        <button type="submit" class="btn-submit" data-i18n="btnSubmit">✓ जमा करें</button>
+                        <button type="reset" class="btn-reset" data-i18n="btnReset">↻ साफ करें</button>
                     </div>
                 </form>
             </div>
@@ -315,37 +347,37 @@
             <!-- All Grievances Tab -->
             <div class="tab-content">
                 <div class="info-box">
-                    <strong>📋 सभी पंजीकृत शिकायतें | All Registered Grievances</strong><br>
-                    यह सूची सभी जमा की गई शिकायतों को दिखाती है | This list shows all submitted grievances
+                    <strong data-i18n="allGrievancesTitle">📋 सभी पंजीकृत शिकायतें</strong><br>
+                    <span data-i18n="allGrievancesInfo">यह सूची सभी जमा की गई शिकायतों को दिखाती है</span>
                 </div>
 
                 <!-- Search and Filter Bar -->
                 <div class="table-toolbar">
                     <div class="toolbar-search">
                         <span class="search-icon">🔍</span>
-                        <input type="text" id="grievanceSearchInput" placeholder="नाम, फोन, आधार, कारण या ब्लॉक से खोजें... / Search...">
+                        <input type="text" id="grievanceSearchInput" placeholder="नाम, फोन, आधार, कारण या ब्लॉक से खोजें..." data-i18n-ph="phSearch">
                     </div>
                     <div class="toolbar-filter">
                         <select id="statusFilterSelect">
-                            <option value="">सभी स्थितियां | All Statuses</option>
+                            <option value="">सभी स्थितियां</option>
                         </select>
                     </div>
-                    <div class="toolbar-count" id="grievanceCountBadge">0 शिकायतें | 0 Records</div>
+                    <div class="toolbar-count" id="grievanceCountBadge">0 शिकायतें</div>
                 </div>
 
                 <div id="grievancesContainer" style="margin-top: 15px;">
                     <div class="empty-message">
-                        🔍 कोई शिकायत नहीं मिली | No grievances found<br>
-                        नई शिकायतें यहाँ दिखाई देंगी | New grievances will appear here
+                        🔍 कोई शिकायत नहीं मिली<br>
+                        नई शिकायतें यहाँ दिखाई देंगी
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Footer (Dynamic content populated via JavaScript) -->
+        <!-- Footer -->
         <div class="footer">
-            <p id="portalCopyright">© 2026 दक्षिण बस्तर दंतेवाडा जिला | South Bastar Dantewada District</p>
-            <p id="portalHours">शिकायत पंजीकरण समय | Grievance Registration Hours: 10:00 AM - 5:00 PM (सोमवार - शुक्रवार | Monday - Friday)</p>
+            <p id="portalCopyright" data-i18n="portalCopyright">© 2026 दक्षिण बस्तर दंतेवाडा जिला | सर्वाधिकार सुरक्षित</p>
+            <p id="portalHours" data-i18n="portalHours">शिकायत पंजीकरण समय: 10:00 AM - 5:00 PM (सोमवार - शुक्रवार)</p>
         </div>
     </div>
 
@@ -355,27 +387,27 @@
             <div class="modal-icon-wrapper">
                 <div class="modal-icon-circle">✓</div>
             </div>
-            <h2 class="modal-title">शिकायत दर्ज हो गई है!</h2>
-            <p class="modal-subtitle">Grievance Submitted Successfully</p>
+            <h2 class="modal-title" data-i18n="modalSuccessTitle">शिकायत दर्ज हो गई है!</h2>
+            <p class="modal-subtitle" data-i18n="modalSuccessSub">आपकी शिकायत सफलता पूर्वक पंजीकृत कर ली गई है।</p>
             
             <div class="modal-body">
                 <div class="modal-info-row">
-                    <span class="modal-label">शिकायत क्रमांक (ID):</span>
+                    <span class="modal-label" data-i18n="modalLblId">शिकायत क्रमांक (ID):</span>
                     <strong class="modal-val" id="modalGrievanceId">-</strong>
                 </div>
                 <div class="modal-info-row">
-                    <span class="modal-label">आवेदक का नाम:</span>
+                    <span class="modal-label" data-i18n="modalLblName">आवेदक का नाम:</span>
                     <span class="modal-val" id="modalApplicantName">-</span>
                 </div>
                 <div class="modal-info-row">
-                    <span class="modal-label">सिंक स्थिति:</span>
+                    <span class="modal-label" data-i18n="modalLblStatus">सिंक स्थिति:</span>
                     <span class="modal-status-badge synced" id="modalSyncStatus">Google Sheet में दर्ज</span>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn-modal-close" id="closeModalBtn">✓ ठीक है | OK</button>
-                <button type="button" class="btn-modal-secondary" id="modalViewAllBtn">📋 सभी शिकायतें देखें | View All Grievances</button>
+                <button type="button" class="btn-modal-close" id="closeModalBtn" data-i18n="modalBtnClose">✓ ठीक है</button>
+                <button type="button" class="btn-modal-secondary" id="modalViewAllBtn" data-i18n="modalBtnViewAll">📋 सभी शिकायतें देखें</button>
             </div>
         </div>
     </div>
