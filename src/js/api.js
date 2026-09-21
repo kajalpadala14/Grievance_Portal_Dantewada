@@ -27,7 +27,7 @@ export async function getInitialData() {
       const parsed = JSON.parse(cachedConfig);
       // Only retain cached locations if they were actually fetched from the Sheet
       if (parsed.isFromSheet && parsed.locations && Object.keys(parsed.locations).length > 0) {
-        if (!parsed.reasons || parsed.reasons.length === 0 || parsed.reasons.some(r => r.value === "आवेदन संबंधी")) {
+        if (!parsed.reasons || parsed.reasons.length === 0 || parsed.reasons.some(r => r.value === "आवेदन संबंधी") || !parsed.reasons.some(r => r.value === "Name Change")) {
           parsed.reasons = DEFAULT_CONFIG.reasons;
         }
         if (parsed.portalInfo && (!parsed.portalInfo.title || parsed.portalInfo.title.includes("सार्वजनिक") || !parsed.portalInfo.copyright || parsed.portalInfo.copyright.includes("2024"))) {

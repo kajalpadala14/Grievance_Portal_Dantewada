@@ -328,6 +328,7 @@ function getDynamicConfig(ss, dataSheet) {
   if (!config.reasons || config.reasons.length === 0) {
     config.reasons = [
       { value: "Rajpatra Process Information", label: "Rajpatra Process Information | राजपत्र प्रक्रिया जानकारी" },
+      { value: "Name Change", label: "Name Change | नाम परिवर्तन / सुधार" },
       { value: "DOB Change", label: "DOB Change | जन्मतिथि सुधार" },
       { value: "Duplicate Aadhaar", label: "Duplicate Aadhaar | डुप्लीकेट आधार" },
       { value: "Gender Change", label: "Gender Change | लिंग परिवर्तन / सुधार" },
