@@ -225,11 +225,6 @@
                             <label for="block" class="required" data-i18n="lblBlock">ब्लॉक</label>
                             <select id="block" name="block" required>
                                 <option value="">-- चयन करें / Select Block --</option>
-                                <option value="दंतेवाडा">दंतेवाडा (Dantewada)</option>
-                                <option value="गीदम">गीदम (Geedam)</option>
-                                <option value="कुआकोंडा">कुआकोंडा (Kuakonda)</option>
-                                <option value="कटेकल्याण">कटेकल्याण (Katekalyan)</option>
-                                <option value="__OTHER__">➕ अन्य / Other</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -245,8 +240,16 @@
                         <div class="form-group">
                             <label for="village" class="required" data-i18n="lblVillage">ग्राम</label>
                             <div class="village-input-wrap">
-                                <input type="text" id="village" name="village" list="allVillagesDatalist" placeholder="गाँव का नाम लिखें या चुनें" data-i18n-ph="phVillage" required autocomplete="off">
-                                <button type="button" class="btn-clear-village" id="clearVillageBtn" style="display: none;" title="साफ करें | Clear">✕</button>
+                                <input type="text" id="village" name="village" placeholder="गाँव का नाम लिखें या चुनें" data-i18n-ph="phVillage" required autocomplete="off">
+                                <div class="village-input-actions">
+                                    <button type="button" class="btn-clear-village" id="clearVillageBtn" style="display: none;" title="साफ करें | Clear">✕</button>
+                                    <button type="button" class="btn-toggle-village-dropdown" id="toggleVillageDropdownBtn" title="गाँव की सूची देखें | View Village List" tabindex="-1">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="6 9 12 15 18 9"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="village-dropdown-menu" id="villageDropdownMenu" role="listbox" style="display: none;"></div>
                             </div>
                             <datalist id="allVillagesDatalist"></datalist>
                         </div>
@@ -261,16 +264,30 @@
 
                     <div class="form-grid">
                         <div class="form-group">
-                            <label for="aadhar" data-i18n="lblAadhar">आधार नंबर (12 अंक)</label>
-                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="[0-9]{12}" placeholder="12 अंकों का आधार नंबर" data-i18n-ph="phAadhar" inputmode="numeric">
+                            <div class="field-header-row">
+                                <label for="aadhar" data-i18n="lblAadhar">आधार नंबर (4 या 12 अंक)</label>
+                                <span class="digit-counter count-zero" id="aadharCounter" title="दर्ज किए गए अंक / Entered digits">0 / 12 अंक</span>
+                            </div>
+                            <div class="aadhar-mode-options" id="aadharModeOptions">
+                                <label class="aadhar-mode-label">
+                                    <input type="radio" name="aadharMode" value="12" checked>
+                                    <span class="mode-pill" data-i18n="aadharMode12">12 अंक (पूरा आधार)</span>
+                                </label>
+                                <label class="aadhar-mode-label">
+                                    <input type="radio" name="aadharMode" value="4">
+                                    <span class="mode-pill" data-i18n="aadharMode4">4 अंक (अंतिम 4 अंक)</span>
+                                </label>
+                            </div>
+                            <input type="text" id="aadhar" name="aadhar" maxlength="12" pattern="([0-9]{4}|[0-9]{12})" placeholder="12 अंकों का आधार नंबर या अंतिम 4 अंक" data-i18n-ph="phAadhar" inputmode="numeric" autocomplete="off">
+                            <small class="digit-count-hint hint-zero" id="aadharHint">12 अंकों का पूरा आधार नंबर या अंतिम 4 अंक दर्ज करें (अभी <strong>0</strong> अंक दर्ज हैं)</small>
                         </div>
                         <div class="form-group">
                             <div class="field-header-row">
-                                <label for="enrollment" data-i18n="lblEnrollment">एनरोलमेंट नंबर (28 अंक)</label>
-                                <span class="digit-counter count-zero" id="enrollmentCounter" title="दर्ज किए गए अंक / Entered digits">0 / 28 अंक</span>
+                                <label for="enrollment" data-i18n="lblEnrollment">एनरोलमेंट नंबर (28 अंक/अक्षर)</label>
+                                <span class="digit-counter count-zero" id="enrollmentCounter" title="दर्ज किए गए वर्ण / Entered characters">0 / 28 वर्ण</span>
                             </div>
-                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[0-9]{28}" placeholder="28 अंकों का एनरोलमेंट नंबर" data-i18n-ph="phEnrollment" inputmode="numeric">
-                            <small class="digit-count-hint hint-zero" id="enrollmentHint">28 अंकों का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> अंक भरे हैं)</small>
+                            <input type="text" id="enrollment" name="enrollment" maxlength="28" pattern="[a-zA-Z0-9]{28}" placeholder="28 अंकों/अक्षरों का एनरोलमेंट नंबर" data-i18n-ph="phEnrollment" autocomplete="off">
+                            <small class="digit-count-hint hint-zero" id="enrollmentHint">28 वर्णों (अंक/अक्षर) का एनरोलमेंट नंबर दर्ज करें (अभी <strong>0</strong> दर्ज हैं)</small>
                         </div>
                     </div>
 
@@ -282,6 +299,7 @@
                         <select id="reason" name="reason" required>
                             <option value="">-- कारण चुनें / Select Reason --</option>
                             <option value="Rajpatra Process Information">Rajpatra Process Information | राजपत्र प्रक्रिया जानकारी</option>
+                            <option value="Name Change">Name Change | नाम परिवर्तन / सुधार</option>
                             <option value="DOB Change">DOB Change | जन्मतिथि सुधार</option>
                             <option value="Duplicate Aadhaar">Duplicate Aadhaar | डुप्लीकेट आधार</option>
                             <option value="Gender Change">Gender Change | लिंग परिवर्तन / सुधार</option>
@@ -335,7 +353,7 @@
                         </div>
                     </div>
 
-                    <!-- Buttons (Sticky & Always Visible) -->
+                    <!-- Buttons (Sticky & Always Visible at Bottom) -->
                     <div class="button-group">
                         <button type="submit" class="btn-submit" id="submitGrievanceBtn" data-i18n="btnSubmit">✓ शिकायत दर्ज करें | SUBMIT</button>
                         <button type="reset" class="btn-reset" id="resetGrievanceBtn" data-i18n="btnReset">↻ फॉर्म साफ करें | RESET</button>
@@ -411,251 +429,7 @@
         </div>
     </div>
 
-    <!-- Inline Guaranteed Reverse Location Autofill for Dantewada District -->
-    <script>
-    (function() {
-        const DANTEWADA_DATA = {
-            "दंतेवाडा": {
-                "दंतेवाडा": ["दंतेवाडा", "दंतेवाड़ा", "दन्तेवाडा", "दन्तेवाड़ा", "दंतेवाडा (मुख्यालय)", "पुराना बाजार", "मेंढका", "आंवराभाटा"],
-                "चितालंका": ["चितालंका", "भोगाम", "भोगम", "चितालूर", "नेरली"],
-                "बालपेट": ["बालपेट", "मासापारा", "कोडेनार", "बालूद"],
-                "टेकनार": ["टेकनार", "कसेनार", "गदापाल", "कावड़गांव"],
-                "मटेनार": ["मटेनार", "पंडेवार", "कटेनार", "दुमाम"],
-                "गंजेनार": ["गंजेनार", "मोलसनार", "जारम"]
-            },
-            "गीदम": {
-                "गीदम": ["गीदम", "गीडम", "गीदम (मुख्यालय)", "कौशल नगर", "कारली", "हारम"],
-                "जावंगा": ["जावंगा", "कारली", "पाहुरनार", "हारम", "एजुकेशन सिटी"],
-                "कारली": ["कारली", "हारम"],
-                "बारसूर": ["बारसूर", "मुचनार", "मंगनार", "चंदनार", "चंदेनार"],
-                "छिंदनार": ["छिंदनार", "पाहुरनार", "सूरनार"],
-                "हारम": ["हारम", "कारली"]
-            },
-            "कुआकोंडा": {
-                "बड़े बचेली": ["बड़े बचेली", "बचेली", "बडेबचेली", "बचेली टाउनशिप", "एनएमडीसी", "बैलाडिला"],
-                "किरंदुल": ["किरंदुल", "किरन्दुल", "किरंदुल टाउनशिप", "कोदईपाल"],
-                "भांसी": ["भांसी", "धुरली", "कमलूर", "कामालूर"],
-                "कमेली": ["कमेली", "बडेकमेली"],
-                "नेरली": ["नेरली"],
-                "कुआकोंडा": ["कुआकोंडा", "कुआकोण्डा", "कुआकोंड़ा", "कुआकोंडा (मुख्यालय)", "मैलावाड़ा", "मैलावाडा", "गामावाड़ा"],
-                "नकुलनार": ["नकुलनार", "बड़ेगुडरा", "बडेगुडरा", "दुगेली"],
-                "समलूर": ["समलूर", "जगारगुंडा"],
-                "पालनार": ["पालनार", "अरनपुर", "पोंदूमु"],
-                "रीता": ["रीता", "पिनेरली", "पिननेरली"],
-                "मदाड़ी": ["मदाड़ी", "मदाडी"]
-            },
-            "कटेकल्याण": {
-                "कटेकल्याण": ["कटेकल्याण", "कटेकल्याण (मुख्यालय)", "बड़ेगोड़े", "बडेगोडे"],
-                "मारजुम": ["मारजुम", "गादापाल", "गदापाल", "बेंजपाल"],
-                "तुमकपाल": ["तुमकपाल", "परचेली", "बड़ागुडरा"],
-                "तेतम": ["तेतम", "मुंडा", "झिरका"]
-            }
-        };
-
-        const TRANSLIT = {
-            "बड़े बचेली": "Bade Bacheli", "बचेली": "Bacheli", "बडेबचेली": "Bade Bacheli", "बचेली टाउनशिप": "Bacheli Township", "एनएमडीसी": "NMDC", "बैलाडिला": "Bailadila",
-            "किरंदुल": "Kirandul", "किरन्दुल": "Kirandul", "किरंदुल टाउनशिप": "Kirandul Township", "कोदईपाल": "Kodaipal",
-            "भांसी": "Bhansi", "धुरली": "Dhurli", "कमलूर": "Kamlur", "कामालूर": "Kamlur",
-            "कमेली": "Kameli", "बडेकमेली": "Bade Kameli",
-            "दंतेवाडा": "Dantewada", "दंतेवाड़ा": "Dantewada", "दन्तेवाडा": "Dantewada", "दन्तेवाड़ा": "Dantewada",
-            "गीदम": "Geedam", "गीडम": "Geedam",
-            "कुआकोंडा": "Kuakonda", "कुआकोण्डा": "Kuakonda", "कुआकोंड़ा": "Kuakonda",
-            "कटेकल्याण": "Katekalyan",
-            "चितालंका": "Chitalanka", "भोगाम": "Bhogam", "भोगम": "Bhogam", "चितालूर": "Chitalur", "नेरली": "Nerli",
-            "बालपेट": "Balpet", "मासापारा": "Masapara", "कोडेनार": "Kodenar", "बालूद": "Balood",
-            "टेकनार": "Teknar", "कसेनार": "Kasenar", "गदापाल": "Gadapal", "गादापाल": "Gadapal", "कावड़गांव": "Kawadgaon",
-            "मटेनार": "Matenar", "पंडेवार": "Pandewar", "कटेनार": "Katenar", "दुमाम": "Dumam",
-            "गंजेनार": "Gantenar", "मोलसनार": "Molsnar", "जारम": "Jaram",
-            "दंतेवाडा (मुख्यालय)": "Dantewada HQ", "पुराना बाजार": "Purana Bazar", "मेंढका": "Mendhka", "आंवराभाटा": "Aonrabhata",
-            "जावंगा": "Javanga", "कारली": "Karli", "पाहुरनार": "Pahurnar", "हारम": "Haram", "एजुकेशन सिटी": "Education City",
-            "बारसूर": "Barsur", "मुचनार": "Muchnar", "मंगनार": "Manganar", "छिंदनार": "Chhindnar", "कौशल नगर": "Kaushal Nagar", "सूरनार": "Surnar",
-            "मैलावाड़ा": "Mailawada", "मैलावाडा": "Mailawada", "गामावाड़ा": "Gamawada",
-            "नकुलनार": "Nakulnar", "बड़ेगुडरा": "Badegudra", "बडेगुडरा": "Badegudra", "दुगेली": "Dugeli",
-            "समलूर": "Samlur", "पालनार": "Palnar", "अरनपुर": "Aranpur", "जगारगुंडा": "Jagargunda", "पोंदूमु": "Pondumu",
-            "रीता": "Rita", "पिनेरली": "Pinerli", "पिननेरली": "Pinerli", "मदाड़ी": "Madadi", "मदाडी": "Madadi",
-            "कटेकल्याण (मुख्यालय)": "Katekalyan HQ", "बड़ेगोड़े": "Badegode", "बडेगोडे": "Badegode",
-            "मारजुम": "Marjum", "बेंजपाल": "Benjpal", "तुमकपाल": "Tumakpal", "परचेली": "Parcheli", "बड़ागुडरा": "Badagudra",
-            "तेतम": "Tetam", "मुंडा": "Munda", "झिरका": "Jhirka"
-        };
-
-        function normDev(str) {
-            if (!str) return '';
-            return String(str)
-                .normalize('NFC')
-                .replace(/\u0958/g, '\u0915')
-                .replace(/\u0959/g, '\u0916')
-                .replace(/\u095A/g, '\u0917')
-                .replace(/\u095B/g, '\u091c')
-                .replace(/\u095C/g, '\u0921')
-                .replace(/\u095D/g, '\u0922')
-                .replace(/\u095E/g, '\u092b')
-                .replace(/\u095F/g, '\u092f')
-                .replace(/\u093c/g, '')
-                .replace(/\u0901/g, '\u0902')
-                .replace(/[\u0919\u091e\u0923\u0928\u092e]\u094d/g, '\u0902')
-                .replace(/[\u200B-\u200D\uFEFF]/g, '')
-                .trim()
-                .toLowerCase();
-        }
-
-        function normCompact(str) {
-            return normDev(str).replace(/[\s\-_.,/()]/g, '');
-        }
-
-        function normEn(str) {
-            return (str || '')
-                .toLowerCase()
-                .replace(/uwa/g, 'ua')
-                .replace(/uva/g, 'ua')
-                .replace(/[\s\-_.,/()]/g, '')
-                .replace(/ee/g, 'i')
-                .replace(/oo/g, 'u')
-                .replace(/w/g, 'v')
-                .replace(/sh/g, 's')
-                .replace(/aa/g, 'a');
-        }
-
-        function sameLocation(value, target, targetEn) {
-            if (!value || !target) return false;
-            const val = String(value).trim();
-            const tgt = String(target).trim();
-            const valEn = TRANSLIT[val] || TRANSLIT[val.replace(/\s*\([^)]*\)/g, '').trim()] || '';
-            const tgtEn = targetEn || TRANSLIT[tgt] || TRANSLIT[tgt.replace(/\s*\([^)]*\)/g, '').trim()] || '';
-            return val === tgt ||
-                normDev(val) === normDev(tgt) ||
-                normCompact(val) === normCompact(tgt) ||
-                normEn(val) === normEn(tgt) ||
-                (tgtEn && normEn(val) === normEn(tgtEn)) ||
-                (valEn && normEn(valEn) === normEn(tgt)) ||
-                (valEn && tgtEn && normEn(valEn) === normEn(tgtEn));
-        }
-
-        function findSelectOption(selectEl, target, targetEn) {
-            if (!selectEl || !target) return null;
-            return Array.from(selectEl.options).find(o =>
-                sameLocation(o.value, target, targetEn) ||
-                sameLocation(o.textContent, target, targetEn)
-            ) || null;
-        }
-
-        const villageList = [];
-        for (const [block, panchayats] of Object.entries(DANTEWADA_DATA)) {
-            for (const [gp, vArray] of Object.entries(panchayats)) {
-                for (const v of vArray) {
-                    const vClean = v.replace(/\s*\([^)]*\)/g, '').trim();
-                    const vEn = TRANSLIT[v] || TRANSLIT[vClean] || '';
-                    villageList.push({
-                        village: v,
-                        villageClean: vClean,
-                        gp: gp,
-                        block: block,
-                        vNorm: normDev(vClean),
-                        vCompact: normCompact(vClean),
-                        gpNorm: normDev(gp),
-                        gpCompact: normCompact(gp),
-                        bNorm: normDev(block),
-                        bCompact: normCompact(block),
-                        vEnNorm: normEn(vEn)
-                    });
-                }
-            }
-        }
-
-        function doAutofill(val) {
-            if (!val || val.trim().length < 2) return;
-            const qRaw = val.trim();
-            const qClean = qRaw.replace(/\s*\([^)]*\)/g, '').split('/')[0].trim();
-            const qDev = normDev(qClean);
-            const qCompact = normCompact(qClean);
-            const qEn = normEn(qClean);
-
-            let match = villageList.find(item => 
-                item.vCompact === qCompact || item.vNorm === qDev || (item.vEnNorm && item.vEnNorm === qEn)
-            );
-
-            if (!match) {
-                match = villageList.find(item => 
-                    (qCompact.length >= 2 && item.vCompact.startsWith(qCompact)) ||
-                    (qDev.length >= 2 && item.vNorm.startsWith(qDev)) || 
-                    (qEn.length >= 3 && item.vEnNorm && item.vEnNorm.startsWith(qEn))
-                );
-            }
-
-            if (!match) {
-                match = villageList.find(item => 
-                    (qCompact.length >= 2 && item.vCompact.includes(qCompact)) ||
-                    (qDev.length >= 2 && item.vNorm.includes(qDev)) || 
-                    (qEn.length >= 3 && item.vEnNorm && item.vEnNorm.includes(qEn))
-                );
-            }
-
-            if (!match) return;
-
-            const blockEl = document.getElementById('block');
-            const gpEl = document.getElementById('panchayat');
-
-            if (blockEl) {
-                let opt = findSelectOption(blockEl, match.block, TRANSLIT[match.block]);
-                if (opt) {
-                    blockEl.value = opt.value;
-                } else {
-                    blockEl.value = match.block;
-                }
-                blockEl.classList.add('autofill-highlight');
-                setTimeout(() => blockEl.classList.remove('autofill-highlight'), 1200);
-            }
-
-            if (gpEl && match.block && DANTEWADA_DATA[match.block]) {
-                const gps = Object.keys(DANTEWADA_DATA[match.block]);
-                let gpHtml = '<option value="">-- ग्राम पंचायत चुनें / Select Gram Panchayat --</option>';
-                gps.forEach(p => {
-                    const isSel = (normCompact(p) === match.gpCompact) ? 'selected' : '';
-                    const pEn = TRANSLIT[p] ? ` (${TRANSLIT[p]})` : '';
-                    gpHtml += `<option value="${p}" ${isSel}>${p}${pEn}</option>`;
-                });
-                gpHtml += '<option value="__OTHER__">➕ अन्य / Other</option>';
-                gpEl.innerHTML = gpHtml;
-                gpEl.disabled = false;
-
-                let gpOpt = Array.from(gpEl.options).find(o => 
-                    sameLocation(o.value, match.gp, TRANSLIT[match.gp]) ||
-                    sameLocation(o.textContent, match.gp, TRANSLIT[match.gp])
-                );
-                if (gpOpt) gpEl.value = gpOpt.value;
-                gpEl.classList.add('autofill-highlight');
-                setTimeout(() => gpEl.classList.remove('autofill-highlight'), 1200);
-            }
-        }
-
-        function initInlineAutofill() {
-            const vInput = document.getElementById('village');
-            const clearBtn = document.getElementById('clearVillageBtn');
-            if (!vInput) return;
-
-            ['input', 'change', 'blur'].forEach(evt => {
-                vInput.addEventListener(evt, function(e) {
-                    const val = e.target.value;
-                    if (clearBtn) clearBtn.style.display = val ? 'flex' : 'none';
-                    doAutofill(val);
-                });
-            });
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initInlineAutofill);
-        } else {
-            initInlineAutofill();
-        }
-    })();
-    </script>
-
-    <!-- External JavaScript: Loads standalone bundle when opened directly via file://, or ES module via dev server -->
-    <script>
-        window.__APPS_SCRIPT_URL__ = 'https://script.google.com/macros/s/AKfycbyhxyByWiY0_ivzoLJDKs1pi6qz42_0Vx0lu-ABgc__TsJZdTjidKvZeeGInQCoqtgQ/exec';
-        if (window.location.protocol === 'file:') {
-            document.write('<script defer src="bundle.js?v=20260917_5"><\/script>');
-        }
-    </script>
-    <script type="module" src="/src/js/script.js"></script>
+    <!-- External JavaScript (ES Module) -->
+    <script type="module" src="src/js/script.js"></script>
 </body>
 </html>

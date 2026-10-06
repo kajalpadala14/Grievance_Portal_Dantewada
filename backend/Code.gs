@@ -332,6 +332,7 @@ function getDynamicConfig(ss, dataSheet) {
   if (!config.reasons || config.reasons.length === 0) {
     config.reasons = [
       { value: "Rajpatra Process Information", label: "Rajpatra Process Information | राजपत्र प्रक्रिया जानकारी" },
+      { value: "Name Change", label: "Name Change | नाम परिवर्तन / सुधार" },
       { value: "DOB Change", label: "DOB Change | जन्मतिथि सुधार" },
       { value: "Duplicate Aadhaar", label: "Duplicate Aadhaar | डुप्लीकेट आधार" },
       { value: "Gender Change", label: "Gender Change | लिंग परिवर्तन / सुधार" },
@@ -412,6 +413,39 @@ function getSheetLocations(ss) {
       }
     } else if (locations[block][panchayat].indexOf(village) === -1) {
       locations[block][panchayat].push(village);
+    }
+  }
+
+  // Ensure each block has its namesake village option
+  const blockVillages = {
+    "दंतेवाड़ा": ["दंतेवाड़ा", "दंतेवाडा"],
+    "दंतेवाडा": ["दंतेवाडा", "दंतेवाड़ा"],
+    "गीदम": ["गीदम"],
+    "कुआकोंडा": ["कुआकोंडा", "कोवाकोंडा"],
+    "कोवाकोंडा": ["कोवाकोंडा", "कुआकोंडा"],
+    "कटेकल्याण": ["कटेकल्याण", "कटे कल्याण"],
+    "कटे कल्याण": ["कटे कल्याण", "कटेकल्याण"]
+  };
+
+  for (const blk of Object.keys(locations)) {
+    const vList = blockVillages[blk] || [blk];
+    let gpKey = blk;
+    if (!locations[blk][gpKey]) {
+      for (const candidate of vList) {
+        if (locations[blk][candidate]) {
+          gpKey = candidate;
+          break;
+        }
+      }
+    }
+    if (!locations[blk][gpKey]) {
+      locations[blk][gpKey] = [];
+    }
+    for (let vIdx = vList.length - 1; vIdx >= 0; vIdx--) {
+      const vName = vList[vIdx];
+      if (locations[blk][gpKey].indexOf(vName) === -1) {
+        locations[blk][gpKey].unshift(vName);
+      }
     }
   }
 
