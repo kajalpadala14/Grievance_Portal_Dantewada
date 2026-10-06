@@ -92,9 +92,9 @@ export const TRANSLATIONS = {
     optAllStatuses: "सभी स्थितियां",
 
     // Buttons
-    btnSubmit: "✓ जमा करें",
-    btnSubmitting: "⏳ जमा हो रहा है...",
-    btnReset: "↻ साफ करें",
+    btnSubmit: "✓ शिकायत दर्ज करें | SUBMIT",
+    btnSubmitting: "⏳ शिकायत दर्ज हो रही है... | Submitting...",
+    btnReset: "↻ फॉर्म साफ करें | RESET",
 
     // All Grievances Section
     allGrievancesTitle: "📋 सभी पंजीकृत शिकायतें",
@@ -209,9 +209,9 @@ export const TRANSLATIONS = {
     optAllStatuses: "All Statuses",
 
     // Buttons
-    btnSubmit: "✓ SUBMIT",
-    btnSubmitting: "⏳ Submitting...",
-    btnReset: "↻ CLEAR",
+    btnSubmit: "✓ Submit Grievance",
+    btnSubmitting: "⏳ Submitting Grievance...",
+    btnReset: "↻ Reset Form",
 
     // All Grievances Section
     allGrievancesTitle: "📋 All Registered Grievances",

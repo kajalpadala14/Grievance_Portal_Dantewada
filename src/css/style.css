@@ -948,31 +948,62 @@ textarea {
     box-shadow: 0 0 0 1px var(--status-color, var(--primary));
 }
 
-/* Form Action Buttons */
+/* Form Action Buttons (Sticky & Always Visible at Bottom) */
 .button-group {
     display: flex;
-    gap: 14px;
-    margin-top: 32px;
+    gap: 16px;
+    margin-top: 36px;
     justify-content: flex-end;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+    z-index: 85;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 16px 24px;
+    border-top: 1.5px solid var(--slate-200);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .button-group {
+    background: rgba(17, 24, 39, 0.95);
+    border-top-color: #1f293d;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .btn-submit {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: var(--white);
-    padding: 14px 36px;
-    font-size: 15px;
+    padding: 14px 38px;
+    font-size: 16px;
     font-weight: 700;
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
     transition: var(--transition);
-    min-width: 180px;
+    min-width: 220px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.45);
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+}
+
+.btn-submit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btn-submit:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .btn-reset {
@@ -985,6 +1016,10 @@ textarea {
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn-reset:hover {
@@ -1442,13 +1477,16 @@ textarea {
     }
 
     .button-group {
-        flex-direction: column;
+        flex-direction: column-reverse;
         gap: 10px;
+        padding: 12px 14px;
+        border-radius: 0;
     }
 
     .btn-submit,
     .btn-reset {
         width: 100%;
+        min-width: unset;
     }
 
     .table-wrapper {

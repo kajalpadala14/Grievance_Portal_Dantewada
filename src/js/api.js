@@ -56,7 +56,9 @@ export async function getInitialData() {
   // 2. Fetch fresh initial data from Google Apps Script
   if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
     try {
-      const response = await fetch(`${APPS_SCRIPT_URL}?action=getInitialData`);
+      const response = await fetch(`${APPS_SCRIPT_URL}?action=getInitialData`, {
+        credentials: "omit"
+      });
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -108,7 +110,9 @@ export async function getInitialData() {
 export async function fetchLocationsFromSheet() {
   if (!APPS_SCRIPT_URL) return null;
   try {
-    const response = await fetch(`${APPS_SCRIPT_URL}?action=getLocations`);
+    const response = await fetch(`${APPS_SCRIPT_URL}?action=getLocations`, {
+      credentials: "omit"
+    });
     if (response.ok) {
       const result = await response.json();
       if (result.success && result.locations && Object.keys(result.locations).length > 0) {
@@ -127,7 +131,9 @@ export async function fetchLocationsFromSheet() {
 export async function getGrievances() {
   if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
     try {
-      const response = await fetch(`${APPS_SCRIPT_URL}?action=getGrievances`);
+      const response = await fetch(`${APPS_SCRIPT_URL}?action=getGrievances`, {
+        credentials: "omit"
+      });
       if (response.ok) {
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) {
@@ -161,6 +167,7 @@ export async function submitGrievance(grievanceData) {
         method: "POST",
         mode: "cors",
         redirect: "follow",
+        credentials: "omit",
         headers: {
           "Content-Type": "text/plain;charset=utf-8"
         },
@@ -183,9 +190,11 @@ export async function submitGrievance(grievanceData) {
           console.warn("[API] Google Sheet Error:", backendError);
         }
       } catch (parseErr) {
-        // Response is not JSON (likely Google Login or Permission Required HTML page)
+        // Response is not JSON (likely Google Login or Gateway Timeout HTML page)
         if (responseText.includes("You need access") || responseText.includes("accounts.google.com")) {
           backendError = "PERMISSION_ERROR: Google Apps Script Web App को 'Who has access: Anyone' पर सेट करना आवश्यक है।";
+        } else if (responseText.includes("unable to open the file") || responseText.includes("Page not found")) {
+          backendError = "TIMEOUT / GOOGLE LOCK: Google Apps Script सर्वर व्यस्त या टाइमआउट हो गया। कृपया कुछ सेकंड बाद पुनः प्रयास करें।";
         } else {
           backendError = "Apps Script से अमान्य उत्तर (HTML) मिला। कृपया Web App URL और Deployment जांचें।";
         }

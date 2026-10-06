@@ -40,15 +40,7 @@ const SPREADSHEET_ID = "11D5GNwLgs9v02wbKxFAX4UPnY2cNeBZC6jsET9NdBnw";
  * Google Spreadsheet प्राप्त करने का सुरक्षित तरीका
  */
 function getSpreadsheet() {
-  // 1. अगर स्क्रिप्ट Extensions > Apps Script से खुली है (Container-bound)
-  try {
-    const active = SpreadsheetApp.getActiveSpreadsheet();
-    if (active) return active;
-  } catch (err) {
-    // Continue
-  }
-
-  // 2. यदि ID दी गई है (Standalone Script)
+  // 1. यदि ID दी गई है (Standalone Script - सबसे तेज़ और डायरेक्ट)
   if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
     try {
       return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
@@ -57,14 +49,16 @@ function getSpreadsheet() {
     }
   }
 
+  // 2. अगर स्क्रिप्ट Extensions > Apps Script से खुली है (Container-bound)
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (err) {}
+
   // 3. Fallback
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) {
-    throw new Error(
-      "Spreadsheet नहीं मिली! कृपया Google Sheet में जाकर Extensions > Apps Script से इस कोड को पेस्ट करें।"
-    );
-  }
-  return ss;
+  throw new Error(
+    "Spreadsheet नहीं मिली! कृपया SPREADSHEET_ID जांचें या Google Sheet में Extensions > Apps Script खोलें।"
+  );
 }
 
 /**
@@ -133,12 +127,16 @@ function doGet(e) {
  * Inserts new grievance exactly into Columns A through O in Sheet1
  */
 function doPost(e) {
+  const lock = LockService.getScriptLock();
   try {
+    // 10 सेकंड तक लॉक के लिए प्रतीक्षा करें (कॉनकरेंट रिक्वेस्ट से टकराव रोकने के लिए)
+    lock.waitLock(10000);
+
     let requestData;
-    if (e.postData && e.postData.contents) {
+    if (e && e.postData && e.postData.contents) {
       requestData = JSON.parse(e.postData.contents);
     } else {
-      requestData = e.parameter || {};
+      requestData = (e && e.parameter) || {};
     }
 
     const action = requestData.action || "submitGrievance";
@@ -169,6 +167,7 @@ function doPost(e) {
       ];
 
       sheet.appendRow(newRow);
+      SpreadsheetApp.flush();
       const insertedRowIndex = sheet.getLastRow();
 
       return createJsonResponse({
@@ -192,6 +191,7 @@ function doPost(e) {
 
       // Column M is Column 13 (Select Status)
       sheet.getRange(rowIndex, 13).setValue(newStatus);
+      SpreadsheetApp.flush();
 
       return createJsonResponse({
         success: true,
@@ -209,6 +209,10 @@ function doPost(e) {
       success: false,
       error: error.toString()
     });
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (lockErr) {}
   }
 }
 
@@ -371,12 +375,16 @@ function getDynamicConfig(ss, dataSheet) {
  * Purely dynamic - NO hardcoded data
  */
 function getSheetLocations(ss) {
-  const possibleNames = ["Locations", "Panchayats", "Villages", "MasterData", "स्थान", "ग्राम_पंचायत", "पंचायात"];
+  const possibleNames = ["locations", "panchayats", "villages", "masterdata", "स्थान", "ग्राम_पंचायत", "पंचायात"];
+  const allSheets = ss.getSheets();
   let locSheet = null;
 
-  for (let i = 0; i < possibleNames.length; i++) {
-    locSheet = ss.getSheetByName(possibleNames[i]);
-    if (locSheet) break;
+  for (let i = 0; i < allSheets.length; i++) {
+    const sName = allSheets[i].getName().trim().toLowerCase();
+    if (possibleNames.includes(sName)) {
+      locSheet = allSheets[i];
+      break;
+    }
   }
 
   if (!locSheet) return null;

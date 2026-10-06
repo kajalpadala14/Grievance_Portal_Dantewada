@@ -1176,7 +1176,9 @@ async function handleFormSubmit(e) {
     
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '⏳ जमा हो रहा है... | Submitting...';
+        const currentLang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
+        const t = TRANSLATIONS[currentLang] || TRANSLATIONS.hi;
+        submitBtn.innerHTML = t.btnSubmitting || '⏳ शिकायत दर्ज हो रही है... | Submitting...';
     }
 
     const selectedStatus = document.querySelector('input[name="status"]:checked');
@@ -1232,7 +1234,9 @@ async function handleFormSubmit(e) {
     } finally {
         if (submitBtn) {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
+            const currentLang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
+            const t = TRANSLATIONS[currentLang] || TRANSLATIONS.hi;
+            submitBtn.innerHTML = t.btnSubmit || '✓ शिकायत दर्ज करें | SUBMIT';
         }
     }
 }

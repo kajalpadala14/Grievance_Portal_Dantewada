@@ -78,9 +78,9 @@
       optOther: "➕ अन्य (मैन्युअल दर्ज करें)",
       optAllStatuses: "सभी स्थितियां",
       // Buttons
-      btnSubmit: "✓ जमा करें",
-      btnSubmitting: "⏳ जमा हो रहा है...",
-      btnReset: "↻ साफ करें",
+      btnSubmit: "✓ शिकायत दर्ज करें | SUBMIT",
+      btnSubmitting: "⏳ शिकायत दर्ज हो रही है... | Submitting...",
+      btnReset: "↻ फॉर्म साफ करें | RESET",
       // All Grievances Section
       allGrievancesTitle: "📋 सभी पंजीकृत शिकायतें",
       allGrievancesInfo: "यह सूची सभी जमा की गई शिकायतों को दिखाती है",
@@ -184,9 +184,9 @@
       optOther: "➕ Other (Enter Manually)",
       optAllStatuses: "All Statuses",
       // Buttons
-      btnSubmit: "✓ SUBMIT",
-      btnSubmitting: "⏳ Submitting...",
-      btnReset: "↻ CLEAR",
+      btnSubmit: "✓ Submit Grievance",
+      btnSubmitting: "⏳ Submitting Grievance...",
+      btnReset: "↻ Reset Form",
       // All Grievances Section
       allGrievancesTitle: "📋 All Registered Grievances",
       allGrievancesInfo: "This list shows all submitted grievances",
@@ -593,7 +593,9 @@
     }
     if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
       try {
-        const response = await fetch(`${APPS_SCRIPT_URL}?action=getInitialData`);
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=getInitialData`, {
+          credentials: "omit"
+        });
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
@@ -630,7 +632,9 @@
   async function fetchLocationsFromSheet() {
     if (!APPS_SCRIPT_URL) return null;
     try {
-      const response = await fetch(`${APPS_SCRIPT_URL}?action=getLocations`);
+      const response = await fetch(`${APPS_SCRIPT_URL}?action=getLocations`, {
+        credentials: "omit"
+      });
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.locations && Object.keys(result.locations).length > 0) {
@@ -654,6 +658,7 @@
           method: "POST",
           mode: "cors",
           redirect: "follow",
+          credentials: "omit",
           headers: {
             "Content-Type": "text/plain;charset=utf-8"
           },
@@ -675,6 +680,8 @@
         } catch (parseErr) {
           if (responseText.includes("You need access") || responseText.includes("accounts.google.com")) {
             backendError = "PERMISSION_ERROR: Google Apps Script Web App को 'Who has access: Anyone' पर सेट करना आवश्यक है।";
+          } else if (responseText.includes("unable to open the file") || responseText.includes("Page not found")) {
+            backendError = "TIMEOUT / GOOGLE LOCK: Google Apps Script सर्वर व्यस्त या टाइमआउट हो गया। कृपया कुछ सेकंड बाद पुनः प्रयास करें।";
           } else {
             backendError = "Apps Script से अमान्य उत्तर (HTML) मिला। कृपया Web App URL और Deployment जांचें।";
           }
@@ -1528,7 +1535,9 @@
     }
     if (submitBtn) {
       submitBtn.disabled = true;
-      submitBtn.innerHTML = "⏳ जमा हो रहा है... | Submitting...";
+      const currentLang = typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "hi";
+      const t = TRANSLATIONS[currentLang] || TRANSLATIONS.hi;
+      submitBtn.innerHTML = t.btnSubmitting || "⏳ शिकायत दर्ज हो रही है... | Submitting...";
     }
     const selectedStatus = document.querySelector('input[name="status"]:checked');
     const defaultStatus = currentConfig.statuses && currentConfig.statuses[0] ? currentConfig.statuses[0].id : "नई";
@@ -1571,7 +1580,9 @@
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
+        const currentLang = typeof getCurrentLanguage === "function" ? getCurrentLanguage() : "hi";
+        const t = TRANSLATIONS[currentLang] || TRANSLATIONS.hi;
+        submitBtn.innerHTML = t.btnSubmit || "✓ शिकायत दर्ज करें | SUBMIT";
       }
     }
   }
