@@ -176,7 +176,7 @@
 
                 <div class="chart-container">
                     <div class="chart-title" data-i18n="chartReasonTitle">🏷️ कारण अनुसार शिकायतें</div>
-                    <div class="bar-chart" id="reasonChart"></div>
+                    <div class="horizontal-bar-chart" id="reasonChart"></div>
                 </div>
 
             </div>
@@ -370,16 +370,56 @@
 
                 <!-- Search and Filter Bar -->
                 <div class="table-toolbar">
-                    <div class="toolbar-search">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="grievanceSearchInput" placeholder="नाम, फोन, आधार, कारण या ब्लॉक से खोजें..." data-i18n-ph="phSearch">
+                    <div class="toolbar-search-row">
+                        <div class="toolbar-search">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="grievanceSearchInput" placeholder="नाम, फोन, आधार, कारण या ब्लॉक से खोजें..." data-i18n-ph="phSearch">
+                        </div>
+                        <div class="toolbar-filter">
+                            <select id="statusFilterSelect" aria-label="Status Filter">
+                                <option value="" data-i18n="optAllStatuses">सभी स्थितियां</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="toolbar-filter">
-                        <select id="statusFilterSelect">
-                            <option value="">सभी स्थितियां</option>
-                        </select>
+
+                    <div class="toolbar-filter-row">
+                        <!-- Date Preset Dropdown -->
+                        <div class="toolbar-filter date-preset-filter">
+                            <select id="dateFilterSelect" aria-label="Date Preset Filter">
+                                <option value="all" data-i18n="optAllDates">📅 सभी तिथियां</option>
+                                <option value="today" data-i18n="optDateToday">📅 आज</option>
+                                <option value="yesterday" data-i18n="optDateYesterday">📅 कल</option>
+                                <option value="last7" data-i18n="optDateLast7">📅 पिछले 7 दिन</option>
+                                <option value="last30" data-i18n="optDateLast30">📅 पिछले 30 दिन</option>
+                                <option value="thisMonth" data-i18n="optDateThisMonth">📅 इस महीने</option>
+                                <option value="custom" data-i18n="optDateCustom">📅 कस्टम तारीख...</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Date Range Inputs -->
+                        <div class="toolbar-date-range" id="toolbarDateRange">
+                            <div class="date-input-group">
+                                <span class="date-label" data-i18n="lblFromDate">तारीख से:</span>
+                                <input type="date" id="startDateFilter" aria-label="From Date">
+                            </div>
+                            <span class="date-separator">-</span>
+                            <div class="date-input-group">
+                                <span class="date-label" data-i18n="lblToDate">तारीख तक:</span>
+                                <input type="date" id="endDateFilter" aria-label="To Date">
+                            </div>
+                            <button type="button" class="btn-clear-date" id="clearDateFilterBtn" title="तारीख फ़िल्टर साफ़ करें" data-i18n-title="btnClearDateTitle">
+                                ✕ <span data-i18n="btnClearDate">रीसेट</span>
+                            </button>
+                        </div>
+
+                        <!-- Actions & Count -->
+                        <div class="toolbar-actions">
+                            <button type="button" class="btn-export-csv" id="exportCsvBtn" title="फ़िल्टर किया हुआ डाटा CSV में डाउनलोड करें" data-i18n-title="btnExportTitle">
+                                📥 <span data-i18n="btnExportCsv">Excel / CSV डाउनलोड</span>
+                            </button>
+                            <div class="toolbar-count" id="grievanceCountBadge">0 शिकायतें</div>
+                        </div>
                     </div>
-                    <div class="toolbar-count" id="grievanceCountBadge">0 शिकायतें</div>
                 </div>
 
                 <div id="grievancesContainer" style="margin-top: 15px;">
@@ -428,6 +468,51 @@
             </div>
         </div>
     </div>
+
+    <!-- Status Edit Modal Popup -->
+    <div class="modal-overlay" id="statusEditModal">
+        <div class="modal-card">
+            <div class="modal-icon-wrapper" style="background: rgba(37, 99, 235, 0.1); color: var(--primary);">
+                <div class="modal-icon-circle" style="background: var(--primary); color: white;">✏️</div>
+            </div>
+            <h2 class="modal-title" data-i18n="modalStatusTitle">शिकायत स्थिति अपडेट करें</h2>
+            <p class="modal-subtitle" data-i18n="modalStatusSub">शिकायत की वर्तमान स्थिति और टिप्पणी बदलें</p>
+            
+            <div class="modal-body">
+                <input type="hidden" id="editStatusGrievanceId">
+                <input type="hidden" id="editStatusRowNumber">
+                <div class="modal-info-row">
+                    <span class="modal-label" data-i18n="modalLblId">शिकायत क्रमांक (ID):</span>
+                    <strong class="modal-val" id="editStatusDisplayId">-</strong>
+                </div>
+                <div class="modal-info-row">
+                    <span class="modal-label" data-i18n="modalLblName">आवेदक का नाम:</span>
+                    <span class="modal-val" id="editStatusDisplayName">-</span>
+                </div>
+                <div class="modal-info-row">
+                    <span class="modal-label" data-i18n="thReason">कारण:</span>
+                    <span class="modal-val" id="editStatusDisplayReason">-</span>
+                </div>
+                <div style="margin-top: 10px; text-align: left;">
+                    <label for="editStatusSelect" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--slate-700);" data-i18n="lblNewStatus">नई स्थिति चुनें / Select Status *</label>
+                    <select id="editStatusSelect" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--slate-300); border-radius: var(--radius-md); font-size: 13.5px; background: var(--white); color: var(--slate-900);">
+                    </select>
+                </div>
+                <div style="margin-top: 10px; text-align: left;">
+                    <label for="editStatusRemarks" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--slate-700);" data-i18n="lblStatusRemarks">टिप्पणी / Remarks (वैकल्पिक)</label>
+                    <textarea id="editStatusRemarks" rows="2" placeholder="स्थिति परिवर्तन से संबंधित टिप्पणी दर्ज करें..." style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--slate-300); border-radius: var(--radius-md); font-size: 13.5px; background: var(--white); color: var(--slate-900); resize: vertical; box-sizing: border-box;" data-i18n-ph="phStatusRemarks"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-close" id="saveStatusModalBtn" data-i18n="btnSaveStatus">✓ स्थिति सुरक्षित करें</button>
+                <button type="button" class="btn-modal-secondary" id="cancelStatusModalBtn" data-i18n="btnCancel">रद्द करें</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification"></div>
 
     <!-- External JavaScript (ES Module) -->
     <script type="module" src="src/js/script.js"></script>

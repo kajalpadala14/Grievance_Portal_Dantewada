@@ -179,7 +179,12 @@ function doPost(e) {
     }
 
     if (action === "updateStatus") {
-      const rowIndex = parseInt(requestData.rowNumber || requestData.id, 10);
+      let rawRow = requestData.rowNumber;
+      if (!rawRow && requestData.id) {
+        const matches = String(requestData.id).match(/\d+/);
+        if (matches) rawRow = matches[0];
+      }
+      const rowIndex = parseInt(rawRow, 10);
       const newStatus = requestData.status;
 
       if (!rowIndex || isNaN(rowIndex) || rowIndex < 2 || !newStatus) {
@@ -191,6 +196,9 @@ function doPost(e) {
 
       // Column M is Column 13 (Select Status)
       sheet.getRange(rowIndex, 13).setValue(newStatus);
+      if (requestData.remarks !== undefined && requestData.remarks !== null) {
+        sheet.getRange(rowIndex, 14).setValue(requestData.remarks);
+      }
       SpreadsheetApp.flush();
 
       return createJsonResponse({

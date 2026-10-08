@@ -81,6 +81,20 @@
       optSelectReason: "-- कारण चुनें / Select Reason --",
       optOther: "➕ अन्य (मैन्युअल दर्ज करें)",
       optAllStatuses: "सभी स्थितियां",
+      optAllDates: "📅 सभी तिथियां",
+      optDateToday: "📅 आज",
+      optDateYesterday: "📅 कल",
+      optDateLast7: "📅 पिछले 7 दिन",
+      optDateLast30: "📅 पिछले 30 दिन",
+      optDateThisMonth: "📅 इस महीने",
+      optDateCustom: "📅 कस्टम तारीख...",
+      lblFromDate: "तारीख से:",
+      lblToDate: "तारीख तक:",
+      btnClearDate: "रीसेट",
+      btnClearDateTitle: "तारीख फ़िल्टर साफ़ करें",
+      btnExportCsv: "Excel / CSV डाउनलोड",
+      btnExportTitle: "फ़िल्टर किया हुआ डाटा CSV में डाउनलोड करें",
+      noDataToExport: "डाउनलोड के लिए कोई डाटा उपलब्ध नहीं है",
       // Buttons
       btnSubmit: "✓ शिकायत दर्ज करें | SUBMIT",
       btnSubmitting: "⏳ शिकायत दर्ज हो रही है... | Submitting...",
@@ -108,6 +122,18 @@
       modalOffline: "⚠️ केवल स्थानीय सुरक्षित (Offline)",
       modalBtnClose: "✓ ठीक है",
       modalBtnViewAll: "📋 सभी शिकायतें देखें",
+      // Status Edit Modal & Toast
+      modalStatusTitle: "शिकायत स्थिति अपडेट करें",
+      modalStatusSub: "शिकायत की वर्तमान स्थिति और टिप्पणी बदलें",
+      lblNewStatus: "नई स्थिति चुनें / Select Status *",
+      lblStatusRemarks: "टिप्पणी / Remarks (वैकल्पिक)",
+      phStatusRemarks: "स्थिति परिवर्तन से संबंधित टिप्पणी दर्ज करें...",
+      btnSaveStatus: "✓ स्थिति सुरक्षित करें",
+      btnSavingStatus: "⏳ स्थिति अपडेट हो रही है...",
+      btnCancel: "रद्द करें",
+      statusUpdatedSuccess: "✓ स्थिति सफलतापूर्वक अपडेट कर दी गई!",
+      statusUpdateFailed: "⚠️ स्थिति अपडेट करने में त्रुटि हुई",
+      actionEditStatus: "स्थिति बदलें",
       // Footer
       portalCopyright: "© 2026 दक्षिण बस्तर दंतेवाडा जिला | सर्वाधिकार सुरक्षित",
       portalHours: "शिकायत पंजीकरण समय: 10:00 AM - 5:00 PM (सोमवार - शुक्रवार)"
@@ -191,6 +217,20 @@
       optSelectReason: "-- Select Reason --",
       optOther: "➕ Other (Enter Manually)",
       optAllStatuses: "All Statuses",
+      optAllDates: "📅 All Dates",
+      optDateToday: "📅 Today",
+      optDateYesterday: "📅 Yesterday",
+      optDateLast7: "📅 Last 7 Days",
+      optDateLast30: "📅 Last 30 Days",
+      optDateThisMonth: "📅 This Month",
+      optDateCustom: "📅 Custom Range...",
+      lblFromDate: "From Date:",
+      lblToDate: "To Date:",
+      btnClearDate: "Reset",
+      btnClearDateTitle: "Clear Date Filter",
+      btnExportCsv: "Download CSV / Excel",
+      btnExportTitle: "Download filtered data as CSV",
+      noDataToExport: "No grievances available to export",
       // Buttons
       btnSubmit: "✓ Submit Grievance",
       btnSubmitting: "⏳ Submitting Grievance...",
@@ -218,6 +258,18 @@
       modalOffline: "⚠️ Saved Locally (Offline)",
       modalBtnClose: "✓ OK",
       modalBtnViewAll: "📋 View All Grievances",
+      // Status Edit Modal & Toast
+      modalStatusTitle: "Update Grievance Status",
+      modalStatusSub: "Change grievance status and remarks",
+      lblNewStatus: "Select New Status *",
+      lblStatusRemarks: "Remarks (Optional)",
+      phStatusRemarks: "Enter remarks regarding status change...",
+      btnSaveStatus: "✓ Save Status",
+      btnSavingStatus: "⏳ Saving Status...",
+      btnCancel: "Cancel",
+      statusUpdatedSuccess: "✓ Status updated successfully!",
+      statusUpdateFailed: "⚠️ Failed to update status",
+      actionEditStatus: "Change Status",
       // Footer
       portalCopyright: "© 2026 South Bastar Dantewada District | All Rights Reserved",
       portalHours: "Grievance Registration Hours: 10:00 AM - 5:00 PM (Monday - Friday)"
@@ -270,6 +322,12 @@
       const key = el.getAttribute("data-i18n-ph");
       if (t[key] !== void 0) {
         el.setAttribute("placeholder", t[key]);
+      }
+    });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+      const key = el.getAttribute("data-i18n-title");
+      if (t[key] !== void 0) {
+        el.setAttribute("title", t[key]);
       }
     });
     const submitBtn = document.querySelector(".btn-submit");
@@ -563,12 +621,68 @@
       return [];
     }
   }
+  async function updateGrievanceStatus(id, newStatus, remarks = null, rowNumber = null) {
+    let backendSuccess = false;
+    let backendError = null;
+    const localGrievances = getStoredGrievances();
+    const index = localGrievances.findIndex((g) => String(g.id) === String(id) || rowNumber && String(g.rowNumber) === String(rowNumber));
+    if (index !== -1) {
+      localGrievances[index].status = newStatus;
+      if (remarks !== null && remarks !== void 0) {
+        localGrievances[index].remarks = remarks;
+      }
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localGrievances));
+    }
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
+      try {
+        const payload = {
+          action: "updateStatus",
+          id,
+          status: newStatus
+        };
+        if (rowNumber) payload.rowNumber = rowNumber;
+        if (remarks !== null && remarks !== void 0) payload.remarks = remarks;
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "cors",
+          redirect: "follow",
+          credentials: "omit",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+        const responseText = await response.text();
+        try {
+          const result = JSON.parse(responseText);
+          if (result.success) {
+            backendSuccess = true;
+            console.log("[API] Status updated in Google Sheet successfully:", result);
+          } else {
+            backendError = result.error || "Failed to update status in Google Sheet.";
+          }
+        } catch (parseErr) {
+          backendError = "Apps Script returned non-JSON response.";
+        }
+      } catch (err) {
+        backendError = err.message || "Network Error while updating status.";
+      }
+    }
+    return {
+      success: true,
+      syncedToSheet: backendSuccess,
+      error: backendError
+    };
+  }
 
   // src/js/script.js
   var currentConfig = DEFAULT_CONFIG;
   var grievances = [];
   var searchQuery = "";
   var statusFilterQuery = "";
+  var datePresetQuery = "all";
+  var startDateQuery = "";
+  var endDateQuery = "";
   var isSubmittingGrievance = false;
   var THEME_STORAGE_KEY = "dantewada_portal_theme";
   function getCurrentTheme() {
@@ -763,21 +877,70 @@
     }
   }
   var allVillagesIndex = [];
+  var DISTRICT_BLOCKS = [
+    {
+      id: "dantewada",
+      hi: "दंतेवाड़ा",
+      en: "Dantewada",
+      aliases: ["दंतेवाड़ा", "दंतेवाडा", "दन्तेवाड़ा", "दन्तेवाडा", "dantewada", "dantewara"]
+    },
+    {
+      id: "geedam",
+      hi: "गीदम",
+      en: "Geedam",
+      aliases: ["गीदम", "गीडम", "geedam", "gidam"]
+    },
+    {
+      id: "kuakonda",
+      hi: "कुआकोंडा",
+      en: "Kuakonda",
+      aliases: ["कुआकोंडा", "कुआकोण्डा", "कुआकोंड़ा", "कोवाकोंडा", "kuakonda", "kuwakonda", "kovakonda", "kowakonda"]
+    },
+    {
+      id: "katekalyan",
+      hi: "कटेकल्याण",
+      en: "Katekalyan",
+      aliases: ["कटेकल्याण", "कटे कल्याण", "katekalyan", "kate kalyan"]
+    }
+  ];
+  function normalizeBlock(rawBlock) {
+    if (!rawBlock) return null;
+    const clean = String(rawBlock).trim().toLowerCase();
+    for (const b of DISTRICT_BLOCKS) {
+      if (b.aliases.some((alias) => alias.toLowerCase() === clean)) {
+        return b;
+      }
+    }
+    for (const b of DISTRICT_BLOCKS) {
+      if (b.aliases.some((alias) => clean.includes(alias.toLowerCase()))) {
+        return b;
+      }
+    }
+    return null;
+  }
   var BLOCK_ALIASES = {
     "दंतेवाड़ा": "दंतेवाड़ा",
     "दंतेवाडा": "दंतेवाड़ा",
+    "दन्तेवाड़ा": "दंतेवाड़ा",
+    "दन्तेवाडा": "दंतेवाड़ा",
     "dantewada": "दंतेवाड़ा",
+    "dantewara": "दंतेवाड़ा",
     "गीदम": "गीदम",
+    "गीडम": "गीदम",
     "geedam": "गीदम",
     "gidam": "गीदम",
     "कुआकोंडा": "कुआकोंडा",
+    "कुआकोण्डा": "कुआकोंडा",
+    "कुआकोंड़ा": "कुआकोंडा",
     "कोवाकोंडा": "कुआकोंडा",
     "kuakonda": "कुआकोंडा",
     "kuwakonda": "कुआकोंडा",
     "kovakonda": "कुआकोंडा",
+    "kowakonda": "कुआकोंडा",
     "कटेकल्याण": "कटेकल्याण",
     "कटे कल्याण": "कटेकल्याण",
-    "katekalyan": "कटेकल्याण"
+    "katekalyan": "कटेकल्याण",
+    "kate kalyan": "कटेकल्याण"
   };
   function findBlockInLocations(locations, blockName) {
     if (!locations || !blockName) return null;
@@ -1689,8 +1852,56 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         closeSubmissionModal();
+        closeStatusEditModal();
       }
     });
+    const saveStatusModalBtn = document.getElementById("saveStatusModalBtn");
+    if (saveStatusModalBtn) {
+      saveStatusModalBtn.addEventListener("click", async () => {
+        const id = document.getElementById("editStatusGrievanceId")?.value;
+        const rowNumber = document.getElementById("editStatusRowNumber")?.value;
+        const newStatus = document.getElementById("editStatusSelect")?.value;
+        const remarks = document.getElementById("editStatusRemarks")?.value;
+        if (id && newStatus) {
+          closeStatusEditModal();
+          await changeGrievanceStatus(id, newStatus, remarks, rowNumber);
+        }
+      });
+    }
+    const cancelStatusModalBtn = document.getElementById("cancelStatusModalBtn");
+    if (cancelStatusModalBtn) {
+      cancelStatusModalBtn.addEventListener("click", closeStatusEditModal);
+    }
+    const statusModal = document.getElementById("statusEditModal");
+    if (statusModal) {
+      statusModal.addEventListener("click", (e) => {
+        if (e.target === statusModal) {
+          closeStatusEditModal();
+        }
+      });
+    }
+    const grievancesContainer = document.getElementById("grievancesContainer");
+    if (grievancesContainer) {
+      grievancesContainer.addEventListener("change", (e) => {
+        if (e.target.classList.contains("status-select-control")) {
+          const id = e.target.getAttribute("data-id");
+          const row = e.target.getAttribute("data-row");
+          const newStatus = e.target.value;
+          if (id && newStatus) {
+            changeGrievanceStatus(id, newStatus, null, row);
+          }
+        }
+      });
+      grievancesContainer.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-status-edit-modal");
+        if (btn) {
+          const id = btn.getAttribute("data-id");
+          if (id) {
+            openStatusEditModal(id);
+          }
+        }
+      });
+    }
     const searchInput = document.getElementById("grievanceSearchInput");
     if (searchInput) {
       searchInput.addEventListener("input", (e) => {
@@ -1703,6 +1914,99 @@
       statusFilterSelect.addEventListener("change", (e) => {
         statusFilterQuery = e.target.value.trim();
         displayGrievances();
+      });
+    }
+    const dateFilterSelect = document.getElementById("dateFilterSelect");
+    const startDateFilter = document.getElementById("startDateFilter");
+    const endDateFilter = document.getElementById("endDateFilter");
+    const clearDateFilterBtn = document.getElementById("clearDateFilterBtn");
+    const exportCsvBtn = document.getElementById("exportCsvBtn");
+    if (dateFilterSelect) {
+      dateFilterSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        datePresetQuery = val;
+        const now = /* @__PURE__ */ new Date();
+        if (val === "all") {
+          startDateQuery = "";
+          endDateQuery = "";
+          if (startDateFilter) startDateFilter.value = "";
+          if (endDateFilter) endDateFilter.value = "";
+        } else if (val === "today") {
+          const todayStr = formatLocalDateYMD(now);
+          startDateQuery = todayStr;
+          endDateQuery = todayStr;
+          if (startDateFilter) startDateFilter.value = todayStr;
+          if (endDateFilter) endDateFilter.value = todayStr;
+        } else if (val === "yesterday") {
+          const yest = new Date(now);
+          yest.setDate(yest.getDate() - 1);
+          const yestStr = formatLocalDateYMD(yest);
+          startDateQuery = yestStr;
+          endDateQuery = yestStr;
+          if (startDateFilter) startDateFilter.value = yestStr;
+          if (endDateFilter) endDateFilter.value = yestStr;
+        } else if (val === "last7") {
+          const past7 = new Date(now);
+          past7.setDate(past7.getDate() - 6);
+          const past7Str = formatLocalDateYMD(past7);
+          const todayStr = formatLocalDateYMD(now);
+          startDateQuery = past7Str;
+          endDateQuery = todayStr;
+          if (startDateFilter) startDateFilter.value = past7Str;
+          if (endDateFilter) endDateFilter.value = todayStr;
+        } else if (val === "last30") {
+          const past30 = new Date(now);
+          past30.setDate(past30.getDate() - 29);
+          const past30Str = formatLocalDateYMD(past30);
+          const todayStr = formatLocalDateYMD(now);
+          startDateQuery = past30Str;
+          endDateQuery = todayStr;
+          if (startDateFilter) startDateFilter.value = past30Str;
+          if (endDateFilter) endDateFilter.value = todayStr;
+        } else if (val === "thisMonth") {
+          const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+          const firstDayStr = formatLocalDateYMD(firstDay);
+          const todayStr = formatLocalDateYMD(now);
+          startDateQuery = firstDayStr;
+          endDateQuery = todayStr;
+          if (startDateFilter) startDateFilter.value = firstDayStr;
+          if (endDateFilter) endDateFilter.value = todayStr;
+        } else if (val === "custom") {
+          if (startDateFilter) startDateFilter.focus();
+        }
+        displayGrievances();
+      });
+    }
+    if (startDateFilter) {
+      startDateFilter.addEventListener("change", (e) => {
+        startDateQuery = e.target.value.trim();
+        if (dateFilterSelect) dateFilterSelect.value = "custom";
+        datePresetQuery = "custom";
+        displayGrievances();
+      });
+    }
+    if (endDateFilter) {
+      endDateFilter.addEventListener("change", (e) => {
+        endDateQuery = e.target.value.trim();
+        if (dateFilterSelect) dateFilterSelect.value = "custom";
+        datePresetQuery = "custom";
+        displayGrievances();
+      });
+    }
+    if (clearDateFilterBtn) {
+      clearDateFilterBtn.addEventListener("click", () => {
+        startDateQuery = "";
+        endDateQuery = "";
+        datePresetQuery = "all";
+        if (dateFilterSelect) dateFilterSelect.value = "all";
+        if (startDateFilter) startDateFilter.value = "";
+        if (endDateFilter) endDateFilter.value = "";
+        displayGrievances();
+      });
+    }
+    if (exportCsvBtn) {
+      exportCsvBtn.addEventListener("click", () => {
+        exportFilteredGrievancesToCSV();
       });
     }
     const tabButtons = document.querySelectorAll(".tab-btn");
@@ -1898,6 +2202,79 @@ Enrollment number must be exactly 28 characters.`);
       setTimeout(() => applicantName.focus({ preventScroll: true }), 150);
     }
   }
+  var toastTimer = null;
+  function showToast(message, isError = false) {
+    const toast = document.getElementById("toastNotification");
+    if (!toast) return;
+    toast.textContent = message;
+    if (isError) {
+      toast.classList.add("error");
+    } else {
+      toast.classList.remove("error");
+    }
+    toast.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 4e3);
+  }
+  function openStatusEditModal(id) {
+    const g = grievances.find((item) => String(item.id) === String(id));
+    if (!g) return;
+    const modal = document.getElementById("statusEditModal");
+    const idInput = document.getElementById("editStatusGrievanceId");
+    const rowInput = document.getElementById("editStatusRowNumber");
+    const displayId = document.getElementById("editStatusDisplayId");
+    const displayName = document.getElementById("editStatusDisplayName");
+    const displayReason = document.getElementById("editStatusDisplayReason");
+    const select = document.getElementById("editStatusSelect");
+    const remarks = document.getElementById("editStatusRemarks");
+    if (!modal) return;
+    if (idInput) idInput.value = g.id || "";
+    if (rowInput) rowInput.value = g.rowNumber || "";
+    if (displayId) displayId.textContent = g.id || "-";
+    if (displayName) displayName.textContent = g.applicantName || "-";
+    if (displayReason) displayReason.textContent = g.reason || "-";
+    if (remarks) remarks.value = g.remarks || "";
+    if (select && Array.isArray(currentConfig.statuses)) {
+      let html = "";
+      currentConfig.statuses.forEach((s) => {
+        const isSelected = String(s.id).trim() === String(g.status || "").trim() ? "selected" : "";
+        html += `<option value="${escapeHtml(s.id)}" ${isSelected}>${escapeHtml(s.label || s.id)}</option>`;
+      });
+      select.innerHTML = html;
+    }
+    modal.classList.add("show");
+  }
+  function closeStatusEditModal() {
+    const modal = document.getElementById("statusEditModal");
+    if (modal) {
+      modal.classList.remove("show");
+    }
+  }
+  async function changeGrievanceStatus(id, newStatus, remarks = null, rowNumber = null) {
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+    const gIndex = grievances.findIndex((g) => String(g.id) === String(id) || rowNumber && String(g.rowNumber) === String(rowNumber));
+    if (gIndex === -1) return;
+    const target = grievances[gIndex];
+    target.status = newStatus;
+    if (remarks !== null && remarks !== void 0) {
+      target.remarks = remarks;
+    }
+    updateDashboard();
+    displayGrievances();
+    showToast(`${t.statusUpdatedSuccess || "✓ स्थिति सफलतापूर्वक अपडेट कर दी गई!"} (${newStatus})`);
+    try {
+      const result = await updateGrievanceStatus(id, newStatus, remarks, rowNumber || target.rowNumber);
+      if (result && !result.syncedToSheet && result.error) {
+        console.warn("[Status] Synced locally, but Google Sheet warning:", result.error);
+      }
+    } catch (err) {
+      console.error("[Status] Error syncing to Google Sheet:", err);
+      showToast(t.statusUpdateFailed || "⚠️ स्थिति अपडेट करने में त्रुटि हुई", true);
+    }
+  }
   function showSubmissionFeedback(synced, errorMsg = "") {
     const message = document.getElementById("successMessage");
     if (!message) return;
@@ -1972,38 +2349,116 @@ Enrollment number must be exactly 28 characters.`);
     renderChart("barChart", chartData, maxValue);
   }
   function drawDynamicBlockChart() {
-    const blockData = {};
+    const lang = getCurrentLanguage();
+    const blockCounts = {};
+    DISTRICT_BLOCKS.forEach((b) => {
+      blockCounts[b.id] = 0;
+    });
+    let otherCount = 0;
     grievances.forEach((g) => {
-      if (g.block) {
-        blockData[g.block] = (blockData[g.block] || 0) + 1;
+      if (!g.block) return;
+      const norm = normalizeBlock(g.block);
+      if (norm) {
+        blockCounts[norm.id] = (blockCounts[norm.id] || 0) + 1;
+      } else {
+        otherCount++;
       }
     });
-    const data = Object.entries(blockData).map(([label, value]) => ({
-      label,
-      value,
-      color: "#2563eb"
-    }));
+    const data = DISTRICT_BLOCKS.map((b) => {
+      const label = lang === "en" ? b.en : b.hi;
+      return {
+        label,
+        value: blockCounts[b.id] || 0,
+        color: "#2563eb"
+      };
+    });
+    if (otherCount > 0) {
+      data.push({
+        label: lang === "en" ? "Other" : "अन्य",
+        value: otherCount,
+        color: "#64748b"
+      });
+    }
     const maxValue = data.length > 0 ? Math.max(...data.map((d) => d.value), 1) : 1;
     renderChart("blockChart", data, maxValue);
   }
+  function formatReasonLabel(rawReason, lang = "hi") {
+    if (!rawReason) return lang === "en" ? "Unspecified" : "अनिर्दिष्ट";
+    const clean = String(rawReason).trim();
+    const configured = (currentConfig.reasons || []).find(
+      (r) => r.value.toLowerCase() === clean.toLowerCase() || r.label.toLowerCase() === clean.toLowerCase() || r.label.toLowerCase().includes(clean.toLowerCase())
+    );
+    if (configured && configured.label) {
+      if (configured.label.includes("|")) {
+        const parts = configured.label.split("|").map((p) => p.trim());
+        const en = parts[0];
+        const hi = parts[1] || parts[0];
+        return lang === "en" ? en : hi;
+      }
+      return configured.label;
+    }
+    if (clean.toLowerCase().includes("other") || clean.includes("अन्य")) {
+      return lang === "en" ? "Other Reason" : "अन्य कारण";
+    }
+    return clean;
+  }
   function drawDynamicReasonChart() {
+    const lang = getCurrentLanguage();
     const reasonData = {};
     grievances.forEach((g) => {
       if (g.reason) {
-        reasonData[g.reason] = (reasonData[g.reason] || 0) + 1;
+        const localizedLabel = formatReasonLabel(g.reason, lang);
+        reasonData[localizedLabel] = (reasonData[localizedLabel] || 0) + 1;
       }
     });
     const data = Object.entries(reasonData).map(([label, value]) => ({
       label,
       value,
-      color: "#7c3aed"
-    }));
+      color: "#8b5cf6"
+    })).sort((a, b) => b.value - a.value);
+    const totalCount = grievances.length || 1;
     const maxValue = data.length > 0 ? Math.max(...data.map((d) => d.value), 1) : 1;
-    renderChart("reasonChart", data, maxValue);
+    renderHorizontalBarChart("reasonChart", data, maxValue, totalCount);
+  }
+  function renderHorizontalBarChart(containerId, data, maxValue, totalCount) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.className = "horizontal-bar-chart";
+    container.innerHTML = "";
+    if (data.length === 0 || data.every((d) => d.value === 0)) {
+      const lang = getCurrentLanguage();
+      const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+      container.innerHTML = `<div class="chart-empty-state">${t.chartEmptyState || "कोई डेटा उपलब्ध नहीं"}</div>`;
+      return;
+    }
+    data.forEach((item, index) => {
+      const widthPct = maxValue > 0 ? Math.round(item.value / maxValue * 100) : 0;
+      const totalPct = totalCount > 0 ? (item.value / totalCount * 100).toFixed(1) : 0;
+      const row = document.createElement("div");
+      row.className = "h-bar-item";
+      row.title = `${item.label}: ${item.value} (${totalPct}%)`;
+      row.innerHTML = `
+            <div class="h-bar-header">
+                <span class="h-bar-label">
+                    <span class="h-bar-rank">${index + 1}</span>
+                    <span>${escapeHtml(item.label)}</span>
+                </span>
+                <span class="h-bar-count-wrap">
+                    <span class="h-bar-count">${item.value}</span>
+                    <span class="h-bar-pct">(${totalPct}%)</span>
+                </span>
+            </div>
+            <div class="h-bar-track">
+                <div class="h-bar-fill" style="width: ${widthPct}%; background: ${item.color || "#8b5cf6"};"></div>
+            </div>
+        `;
+      container.appendChild(row);
+    });
   }
   function renderChart(containerId, data, maxValue) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    container.className = "bar-chart";
     container.innerHTML = "";
     if (data.length === 0 || data.every((d) => d.value === 0)) {
       const lang = getCurrentLanguage();
@@ -2026,25 +2481,140 @@ Enrollment number must be exactly 28 characters.`);
       container.appendChild(bar);
     });
   }
-  function displayGrievances() {
-    const container = document.getElementById("grievancesContainer");
-    const countBadge = document.getElementById("grievanceCountBadge");
-    if (!container) return;
-    const filtered = grievances.filter((g) => {
+  function parseDateToYMD(dateVal) {
+    if (!dateVal) return null;
+    if (typeof dateVal === "string") {
+      const trimmed = dateVal.trim();
+      if (!trimmed) return null;
+      const isoMatch = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+      if (isoMatch) {
+        return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+      }
+      const dmyMatch = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/);
+      if (dmyMatch) {
+        return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+      }
+      const parsed = new Date(trimmed);
+      if (!isNaN(parsed.getTime())) {
+        return formatLocalDateYMD(parsed);
+      }
+    } else if (dateVal instanceof Date && !isNaN(dateVal.getTime())) {
+      return formatLocalDateYMD(dateVal);
+    }
+    return null;
+  }
+  function formatLocalDateYMD(d) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  function getFilteredGrievances() {
+    return grievances.filter((g) => {
+      const normBlock = normalizeBlock(g.block);
+      const blockSearchFields = normBlock ? [normBlock.hi, normBlock.en, ...normBlock.aliases] : [g.block];
       const matchesSearch = !searchQuery || [
         g.applicantName,
         g.phone,
         g.aadhar,
         g.enrollment,
         g.reason,
-        g.block,
+        ...blockSearchFields,
         g.panchayat,
         g.village,
         g.id
       ].some((val) => String(val || "").toLowerCase().includes(searchQuery));
       const matchesStatus = !statusFilterQuery || String(g.status || "").trim() === statusFilterQuery.trim();
-      return matchesSearch && matchesStatus;
+      let matchesDate = true;
+      if (startDateQuery || endDateQuery) {
+        const gDateYMD = parseDateToYMD(g.date);
+        if (gDateYMD) {
+          if (startDateQuery && gDateYMD < startDateQuery) {
+            matchesDate = false;
+          }
+          if (endDateQuery && gDateYMD > endDateQuery) {
+            matchesDate = false;
+          }
+        } else {
+          matchesDate = false;
+        }
+      }
+      return matchesSearch && matchesStatus && matchesDate;
     });
+  }
+  function exportFilteredGrievancesToCSV() {
+    const list = getFilteredGrievances();
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+    if (!list || list.length === 0) {
+      alert(t.noDataToExport || "डाउनलोड के लिए कोई डाटा उपलब्ध नहीं है | No data to export");
+      return;
+    }
+    const headers = [
+      "क्र. / S.No.",
+      "शिकायत आईडी / ID",
+      "तारीख / Date",
+      "आवेदक का नाम / Name",
+      "पिता/पति का नाम / Father Name",
+      "मोबाइल / Phone",
+      "आधार / Aadhaar",
+      "एनरोलमेंट / EID",
+      "ब्लॉक / Block",
+      "ग्राम पंचायत / Panchayat",
+      "ग्राम / Village",
+      "कारण / Reason",
+      "स्थिति / Status",
+      "विवरण / Description"
+    ];
+    const escapeCsvField = (field) => {
+      const str = String(field === void 0 || field === null ? "" : field);
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+    const csvRows = [headers.map(escapeCsvField).join(",")];
+    list.forEach((g, idx) => {
+      const row = [
+        idx + 1,
+        g.id || "",
+        g.date ? formatDate(g.date) || g.date : "",
+        g.applicantName || "",
+        g.fatherName || "",
+        g.phone || "",
+        g.aadhar || "",
+        g.enrollment || "",
+        g.block || "",
+        g.panchayat || "",
+        g.village || "",
+        g.reason || "",
+        g.status || "",
+        g.description || ""
+      ];
+      csvRows.push(row.map(escapeCsvField).join(","));
+    });
+    const csvString = "\uFEFF" + csvRows.join("\r\n");
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    let dateRangePart = "all";
+    if (startDateQuery && endDateQuery) {
+      dateRangePart = `${startDateQuery}_to_${endDateQuery}`;
+    } else if (startDateQuery) {
+      dateRangePart = `from_${startDateQuery}`;
+    } else if (endDateQuery) {
+      dateRangePart = `upto_${endDateQuery}`;
+    }
+    const todayStr = formatLocalDateYMD(/* @__PURE__ */ new Date());
+    link.href = url;
+    link.setAttribute("download", `Dantewada_Grievances_${dateRangePart}_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+  function displayGrievances() {
+    const container = document.getElementById("grievancesContainer");
+    const countBadge = document.getElementById("grievanceCountBadge");
+    if (!container) return;
+    const filtered = getFilteredGrievances();
     const lang = getCurrentLanguage();
     const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
     if (countBadge) {
@@ -2083,9 +2653,17 @@ Enrollment number must be exactly 28 characters.`);
     `;
     filtered.forEach((g) => {
       const desc = (g.description || "").substring(0, 60) + (g.description && g.description.length > 60 ? "..." : "");
-      const statusConfig = (currentConfig.statuses || []).find((s) => String(s.id).trim() === String(g.status).trim());
+      const currentStatus = String(g.status || "नई").trim();
+      const statusConfig = (currentConfig.statuses || []).find((s) => String(s.id).trim() === currentStatus);
       const statusColor = statusConfig ? statusConfig.color : "#2563eb";
-      const locationText = [g.block, g.panchayat, g.village].filter(Boolean).join(" • ");
+      const normBlock = normalizeBlock(g.block);
+      const displayBlock = normBlock ? lang === "en" ? normBlock.en : normBlock.hi : g.block;
+      const locationText = [displayBlock, g.panchayat, g.village].filter(Boolean).join(" • ");
+      let statusOptionsHtml = "";
+      (currentConfig.statuses || []).forEach((s) => {
+        const isSelected = String(s.id).trim() === currentStatus ? "selected" : "";
+        statusOptionsHtml += `<option value="${escapeHtml(s.id)}" ${isSelected}>${escapeHtml(s.label || s.id)}</option>`;
+      });
       html += `
             <tr>
                 <td data-label="आवेदक | Applicant">
@@ -2096,11 +2674,17 @@ Enrollment number must be exactly 28 characters.`);
                 <td data-label="कारण | Reason"><strong>${escapeHtml(g.reason || "-")}</strong></td>
                 <td data-label="तारीख | Date">${formatDate(g.date) || "-"}</td>
                 <td data-label="स्थिति | Status">
-                    <span class="status-badge" style="background-color: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}40;">
-                        ${escapeHtml(g.status || "नई")}
-                    </span>
+                    <div class="status-badge-wrap">
+                        <select class="status-select-control" data-id="${escapeHtml(g.id)}" data-row="${g.rowNumber || ""}" style="background-color: ${statusColor}15; color: ${statusColor}; border-color: ${statusColor}50;" title="स्थिति बदलें | Change Status">
+                            ${statusOptionsHtml}
+                        </select>
+                        <button type="button" class="btn-status-edit-modal" data-id="${escapeHtml(g.id)}" title="विस्तृत स्थिति / टिप्पणी बदलें | Edit Status & Remarks">✏️</button>
+                    </div>
                 </td>
-                <td data-label="विवरण | Description">${escapeHtml(desc || "-")}</td>
+                <td data-label="विवरण | Description">
+                    ${escapeHtml(desc || "-")}
+                    ${g.remarks ? `<br><small style="color: var(--slate-500); font-style: italic;">💬 ${escapeHtml(g.remarks)}</small>` : ""}
+                </td>
             </tr>
         `;
     });
@@ -2117,6 +2701,13 @@ Enrollment number must be exactly 28 characters.`);
   function formatDate(dateStr) {
     if (!dateStr) return "";
     try {
+      const ymd = parseDateToYMD(dateStr);
+      if (ymd) {
+        const parts = ymd.split("-");
+        if (parts.length === 3) {
+          return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+      }
       const date = new Date(dateStr);
       const lang = getCurrentLanguage();
       return isNaN(date.getTime()) ? dateStr : date.toLocaleDateString(lang === "en" ? "en-IN" : "hi-IN");
@@ -2128,6 +2719,8 @@ Enrollment number must be exactly 28 characters.`);
   window.toggleTheme = toggleTheme;
   window.toggleLanguage = toggleLanguage;
   window.__toggleLanguage = toggleLanguage;
+  window.openStatusEditModal = openStatusEditModal;
+  window.closeStatusEditModal = closeStatusEditModal;
   window.__onLanguageChanged = function(lang) {
     updateThemeToggleButton(getCurrentTheme());
     renderFormOptions(currentConfig);

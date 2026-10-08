@@ -94,6 +94,20 @@ export const TRANSLATIONS = {
     optSelectReason: "-- कारण चुनें / Select Reason --",
     optOther: "➕ अन्य (मैन्युअल दर्ज करें)",
     optAllStatuses: "सभी स्थितियां",
+    optAllDates: "📅 सभी तिथियां",
+    optDateToday: "📅 आज",
+    optDateYesterday: "📅 कल",
+    optDateLast7: "📅 पिछले 7 दिन",
+    optDateLast30: "📅 पिछले 30 दिन",
+    optDateThisMonth: "📅 इस महीने",
+    optDateCustom: "📅 कस्टम तारीख...",
+    lblFromDate: "तारीख से:",
+    lblToDate: "तारीख तक:",
+    btnClearDate: "रीसेट",
+    btnClearDateTitle: "तारीख फ़िल्टर साफ़ करें",
+    btnExportCsv: "Excel / CSV डाउनलोड",
+    btnExportTitle: "फ़िल्टर किया हुआ डाटा CSV में डाउनलोड करें",
+    noDataToExport: "डाउनलोड के लिए कोई डाटा उपलब्ध नहीं है",
 
     // Buttons
     btnSubmit: "✓ शिकायत दर्ज करें | SUBMIT",
@@ -124,6 +138,19 @@ export const TRANSLATIONS = {
     modalOffline: "⚠️ केवल स्थानीय सुरक्षित (Offline)",
     modalBtnClose: "✓ ठीक है",
     modalBtnViewAll: "📋 सभी शिकायतें देखें",
+
+    // Status Edit Modal & Toast
+    modalStatusTitle: "शिकायत स्थिति अपडेट करें",
+    modalStatusSub: "शिकायत की वर्तमान स्थिति और टिप्पणी बदलें",
+    lblNewStatus: "नई स्थिति चुनें / Select Status *",
+    lblStatusRemarks: "टिप्पणी / Remarks (वैकल्पिक)",
+    phStatusRemarks: "स्थिति परिवर्तन से संबंधित टिप्पणी दर्ज करें...",
+    btnSaveStatus: "✓ स्थिति सुरक्षित करें",
+    btnSavingStatus: "⏳ स्थिति अपडेट हो रही है...",
+    btnCancel: "रद्द करें",
+    statusUpdatedSuccess: "✓ स्थिति सफलतापूर्वक अपडेट कर दी गई!",
+    statusUpdateFailed: "⚠️ स्थिति अपडेट करने में त्रुटि हुई",
+    actionEditStatus: "स्थिति बदलें",
 
     // Footer
     portalCopyright: "© 2026 दक्षिण बस्तर दंतेवाडा जिला | सर्वाधिकार सुरक्षित",
@@ -215,6 +242,20 @@ export const TRANSLATIONS = {
     optSelectReason: "-- Select Reason --",
     optOther: "➕ Other (Enter Manually)",
     optAllStatuses: "All Statuses",
+    optAllDates: "📅 All Dates",
+    optDateToday: "📅 Today",
+    optDateYesterday: "📅 Yesterday",
+    optDateLast7: "📅 Last 7 Days",
+    optDateLast30: "📅 Last 30 Days",
+    optDateThisMonth: "📅 This Month",
+    optDateCustom: "📅 Custom Range...",
+    lblFromDate: "From Date:",
+    lblToDate: "To Date:",
+    btnClearDate: "Reset",
+    btnClearDateTitle: "Clear Date Filter",
+    btnExportCsv: "Download CSV / Excel",
+    btnExportTitle: "Download filtered data as CSV",
+    noDataToExport: "No grievances available to export",
 
     // Buttons
     btnSubmit: "✓ Submit Grievance",
@@ -245,6 +286,19 @@ export const TRANSLATIONS = {
     modalOffline: "⚠️ Saved Locally (Offline)",
     modalBtnClose: "✓ OK",
     modalBtnViewAll: "📋 View All Grievances",
+
+    // Status Edit Modal & Toast
+    modalStatusTitle: "Update Grievance Status",
+    modalStatusSub: "Change grievance status and remarks",
+    lblNewStatus: "Select New Status *",
+    lblStatusRemarks: "Remarks (Optional)",
+    phStatusRemarks: "Enter remarks regarding status change...",
+    btnSaveStatus: "✓ Save Status",
+    btnSavingStatus: "⏳ Saving Status...",
+    btnCancel: "Cancel",
+    statusUpdatedSuccess: "✓ Status updated successfully!",
+    statusUpdateFailed: "⚠️ Failed to update status",
+    actionEditStatus: "Change Status",
 
     // Footer
     portalCopyright: "© 2026 South Bastar Dantewada District | All Rights Reserved",
@@ -306,6 +360,14 @@ export function applyLanguage(lang) {
     const key = el.getAttribute('data-i18n-ph');
     if (t[key] !== undefined) {
       el.setAttribute('placeholder', t[key]);
+    }
+  });
+
+  // 4b. Element Titles / Tooltips with data-i18n-title
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (t[key] !== undefined) {
+      el.setAttribute('title', t[key]);
     }
   });
 

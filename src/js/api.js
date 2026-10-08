@@ -226,3 +226,67 @@ function getStoredGrievances() {
     return [];
   }
 }
+
+/**
+ * Update the status of an existing grievance (both locally and in Google Sheet)
+ */
+export async function updateGrievanceStatus(id, newStatus, remarks = null, rowNumber = null) {
+  let backendSuccess = false;
+  let backendError = null;
+
+  // 1. Update in LocalStorage
+  const localGrievances = getStoredGrievances();
+  const index = localGrievances.findIndex(g => String(g.id) === String(id) || (rowNumber && String(g.rowNumber) === String(rowNumber)));
+  if (index !== -1) {
+    localGrievances[index].status = newStatus;
+    if (remarks !== null && remarks !== undefined) {
+      localGrievances[index].remarks = remarks;
+    }
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localGrievances));
+  }
+
+  // 2. Sync to Google Apps Script
+  if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
+    try {
+      const payload = {
+        action: "updateStatus",
+        id: id,
+        status: newStatus
+      };
+      if (rowNumber) payload.rowNumber = rowNumber;
+      if (remarks !== null && remarks !== undefined) payload.remarks = remarks;
+
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        credentials: "omit",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      try {
+        const result = JSON.parse(responseText);
+        if (result.success) {
+          backendSuccess = true;
+          console.log("[API] Status updated in Google Sheet successfully:", result);
+        } else {
+          backendError = result.error || "Failed to update status in Google Sheet.";
+        }
+      } catch (parseErr) {
+        backendError = "Apps Script returned non-JSON response.";
+      }
+    } catch (err) {
+      backendError = err.message || "Network Error while updating status.";
+    }
+  }
+
+  return {
+    success: true,
+    syncedToSheet: backendSuccess,
+    error: backendError
+  };
+}
