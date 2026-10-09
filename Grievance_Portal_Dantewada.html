@@ -227,16 +227,21 @@
                                 <option value="">-- चयन करें / Select Block --</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" id="dantewadaPanchayatGroup">
                             <label for="panchayat" class="required" data-i18n="lblPanchayat">ग्राम पंचायत</label>
                             <select id="panchayat" name="panchayat" required disabled>
                                 <option value="">-- पहले ब्लॉक चुनें --</option>
                             </select>
                             <input type="text" id="panchayatCustom" name="panchayatCustom" placeholder="ग्राम पंचायत का नाम लिखें" data-i18n-ph="phPanchayatCustom" style="display: none; margin-top: 8px;">
                         </div>
+                        <div class="form-group" id="otherDistrictGroup" style="display: none;">
+                            <label for="otherDistrict" class="required" data-i18n="lblOtherDistrict">जिला का नाम</label>
+                            <input type="text" id="otherDistrict" name="otherDistrict" placeholder="जिले का नाम लिखें (उदा. सुकमा, बस्तर, बीजापुर आदि)" data-i18n-ph="phOtherDistrict">
+                        </div>
                     </div>
 
-                    <div class="form-grid">
+                    <!-- Dantewada Village & Email Grid (Default) -->
+                    <div class="form-grid" id="dantewadaVillageGrid">
                         <div class="form-group">
                             <label for="village" class="required" data-i18n="lblVillage">ग्राम</label>
                             <div class="village-input-wrap">
@@ -256,6 +261,31 @@
                         <div class="form-group">
                             <label for="email" data-i18n="lblEmail">ईमेल</label>
                             <input type="email" id="email" name="email" maxlength="100" placeholder="example@email.com" data-i18n-ph="phEmail">
+                        </div>
+                    </div>
+
+                    <!-- Other District Gram Panchayat & Village Grid (Active when अन्य जिला is chosen) -->
+                    <div class="form-grid" id="otherDistrictLocationGrid" style="display: none;">
+                        <div class="form-group">
+                            <label for="otherPanchayat" class="required" data-i18n="lblOtherPanchayat">ग्राम पंचायत का नाम</label>
+                            <input type="text" id="otherPanchayat" name="otherPanchayat" placeholder="ग्राम पंचायत का नाम लिखें" data-i18n-ph="phOtherPanchayat">
+                        </div>
+                        <div class="form-group">
+                            <label for="otherVillage" class="required" data-i18n="lblOtherVillage">ग्राम / गाँव का नाम</label>
+                            <input type="text" id="otherVillage" name="otherVillage" placeholder="गाँव / ग्राम का नाम लिखें" data-i18n-ph="phOtherVillage">
+                        </div>
+                    </div>
+
+                    <!-- Other District Email & Note Row -->
+                    <div class="form-grid" id="otherDistrictEmailGrid" style="display: none;">
+                        <div class="form-group">
+                            <label for="otherEmail" data-i18n="lblEmail">ईमेल</label>
+                            <input type="email" id="otherEmail" name="otherEmail" maxlength="100" placeholder="example@email.com" data-i18n-ph="phEmail">
+                        </div>
+                        <div class="form-group" style="justify-content: flex-end;">
+                            <div class="other-district-badge-note">
+                                🏢 <span data-i18n="lblOtherDistrictBadge">अन्य जिला प्रकरण (प्रकरण संबंधित जिले को अग्रेषित किया जाएगा)</span>
+                            </div>
                         </div>
                     </div>
 

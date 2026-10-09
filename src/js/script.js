@@ -206,12 +206,13 @@ function renderFormOptions(config) {
                 const isSelected = b.value === currentValue ? 'selected' : '';
                 html += `<option value="${escapeHtml(b.value)}" ${isSelected}>${escapeHtml(b.label || b.value)}</option>`;
             });
-            html += `<option value="__OTHER__">${t.optOther}</option>`;
+            const isOtherSelected = (currentValue === 'OTHER_DISTRICT' || currentValue === '__OTHER__') ? 'selected' : '';
+            html += `<option value="OTHER_DISTRICT" ${isOtherSelected}>${t.optOtherDistrict || t.optOther || '➕ अन्य जिला (मैन्युअल दर्ज करें)'}</option>`;
         }
         blockSelect.innerHTML = html;
 
         // If a block was already selected, refresh dependent dropdowns
-        if (currentValue && config.locations) {
+        if (currentValue) {
             handleBlockChange();
         }
     }
@@ -929,7 +930,86 @@ function handleBlockChange() {
     const villageInput = document.getElementById('village');
     const panchayatCustom = document.getElementById('panchayatCustom');
 
+    const dantewadaPanchayatGroup = document.getElementById('dantewadaPanchayatGroup');
+    const otherDistrictGroup = document.getElementById('otherDistrictGroup');
+    const dantewadaVillageGrid = document.getElementById('dantewadaVillageGrid');
+    const otherDistrictLocationGrid = document.getElementById('otherDistrictLocationGrid');
+    const otherDistrictEmailGrid = document.getElementById('otherDistrictEmailGrid');
+
+    const otherDistrictInput = document.getElementById('otherDistrict');
+    const otherPanchayatInput = document.getElementById('otherPanchayat');
+    const otherVillageInput = document.getElementById('otherVillage');
+    const emailInput = document.getElementById('email');
+    const otherEmailInput = document.getElementById('otherEmail');
+
     const selectedBlock = blockSelect ? blockSelect.value : '';
+    const isOtherDistrict = (selectedBlock === 'OTHER_DISTRICT' || selectedBlock === '__OTHER__' || selectedBlock === 'अन्य जिला' || selectedBlock.startsWith('अन्य जिला'));
+
+    if (isOtherDistrict) {
+        // Hide Dantewada cascading dropdowns
+        if (dantewadaPanchayatGroup) dantewadaPanchayatGroup.style.display = 'none';
+        if (dantewadaVillageGrid) dantewadaVillageGrid.style.display = 'none';
+        if (panchayatCustom) panchayatCustom.style.display = 'none';
+
+        if (panchayatSelect) {
+            panchayatSelect.required = false;
+            panchayatSelect.disabled = true;
+        }
+        if (villageInput) {
+            villageInput.required = false;
+        }
+
+        // Show Other District inputs
+        if (otherDistrictGroup) otherDistrictGroup.style.display = 'flex';
+        if (otherDistrictLocationGrid) otherDistrictLocationGrid.style.display = 'grid';
+        if (otherDistrictEmailGrid) otherDistrictEmailGrid.style.display = 'grid';
+
+        if (otherDistrictInput) otherDistrictInput.required = true;
+        if (otherPanchayatInput) otherPanchayatInput.required = true;
+        if (otherVillageInput) otherVillageInput.required = true;
+
+        // Sync email if previously entered
+        if (emailInput && otherEmailInput && emailInput.value) {
+            otherEmailInput.value = emailInput.value;
+        }
+
+        // Auto-select "Other district case" in reason dropdown if currently unselected
+        const reasonSelect = document.getElementById('reason');
+        if (reasonSelect && !reasonSelect.value) {
+            for (const opt of reasonSelect.options) {
+                if (opt.value === 'Other district case' || opt.value.includes('Other district')) {
+                    reasonSelect.value = opt.value;
+                    break;
+                }
+            }
+        }
+
+        closeVillageDropdown();
+        if (otherDistrictInput) {
+            otherDistrictInput.focus();
+        }
+        return;
+    }
+
+    // Normal Block mode (Dantewada blocks)
+    if (otherDistrictGroup) otherDistrictGroup.style.display = 'none';
+    if (otherDistrictLocationGrid) otherDistrictLocationGrid.style.display = 'none';
+    if (otherDistrictEmailGrid) otherDistrictEmailGrid.style.display = 'none';
+
+    if (otherDistrictInput) otherDistrictInput.required = false;
+    if (otherPanchayatInput) otherPanchayatInput.required = false;
+    if (otherVillageInput) otherVillageInput.required = false;
+
+    if (dantewadaPanchayatGroup) dantewadaPanchayatGroup.style.display = 'flex';
+    if (dantewadaVillageGrid) dantewadaVillageGrid.style.display = 'grid';
+
+    if (panchayatSelect) panchayatSelect.required = true;
+    if (villageInput) villageInput.required = true;
+
+    // Sync back email if typed in otherEmail
+    if (otherEmailInput && emailInput && otherEmailInput.value) {
+        emailInput.value = otherEmailInput.value;
+    }
 
     if (panchayatCustom) panchayatCustom.style.display = 'none';
 
@@ -1256,6 +1336,15 @@ function resetGrievanceForm(isFromNativeReset = false) {
         if (form && !isFromNativeReset) {
             form.reset();
         }
+        const otherDistrictInput = document.getElementById('otherDistrict');
+        const otherPanchayatInput = document.getElementById('otherPanchayat');
+        const otherVillageInput = document.getElementById('otherVillage');
+        const otherEmailInput = document.getElementById('otherEmail');
+        if (otherDistrictInput) otherDistrictInput.value = '';
+        if (otherPanchayatInput) otherPanchayatInput.value = '';
+        if (otherVillageInput) otherVillageInput.value = '';
+        if (otherEmailInput) otherEmailInput.value = '';
+
         clearVillage(false);
         handleBlockChange();
         setDefaultDate();
@@ -1398,6 +1487,18 @@ function setupEventListeners() {
     const panchayatSelect = document.getElementById('panchayat');
     if (panchayatSelect) {
         panchayatSelect.addEventListener('change', handlePanchayatChange);
+    }
+
+    // Sync normal and other-district email inputs
+    const normalEmailInput = document.getElementById('email');
+    const otherEmailInput = document.getElementById('otherEmail');
+    if (normalEmailInput && otherEmailInput) {
+        normalEmailInput.addEventListener('input', (e) => {
+            otherEmailInput.value = e.target.value;
+        });
+        otherEmailInput.addEventListener('input', (e) => {
+            normalEmailInput.value = e.target.value;
+        });
     }
 
     // Refresh Locations directly from Google Sheet button
@@ -1736,48 +1837,82 @@ async function handleFormSubmit(e) {
     const submitBtn = document.querySelector('.btn-submit');
     const originalBtnText = submitBtn ? submitBtn.innerHTML : '✓ जमा करें | SUBMIT';
 
-    const blockVal = (document.getElementById('block').value || '').trim();
+    const blockSelect = document.getElementById('block');
+    const rawBlockVal = (blockSelect ? blockSelect.value : '').trim();
+    const isOtherDistrict = (rawBlockVal === 'OTHER_DISTRICT' || rawBlockVal === '__OTHER__' || rawBlockVal === 'अन्य जिला' || rawBlockVal.startsWith('अन्य जिला'));
 
-    const panchayatSelect = document.getElementById('panchayat');
-    const panchayatCustom = document.getElementById('panchayatCustom');
-    const panchayatVal = (panchayatSelect && panchayatSelect.value === '__OTHER__')
-        ? (panchayatCustom ? panchayatCustom.value.trim() : '')
-        : (panchayatSelect ? panchayatSelect.value.trim() : '');
+    let blockVal = rawBlockVal;
+    let panchayatVal = '';
+    let villageVal = '';
+    const otherEmailInput = document.getElementById('otherEmail');
+    const emailInput = document.getElementById('email');
+    const emailVal = ((otherEmailInput && otherEmailInput.value) || (emailInput && emailInput.value) || '').trim();
 
-    const villageInput = document.getElementById('village');
-    let villageVal = (villageInput ? villageInput.value.trim() : '');
-    if (villageVal.includes('(')) {
-        villageVal = villageVal.split('(')[0].trim();
-    }
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
 
-    const phoneVal = (document.getElementById('phone').value || '').trim();
-    const aadharVal = (document.getElementById('aadhar').value || '').trim();
-    const enrollmentVal = (document.getElementById('enrollment').value || '').trim();
-    const emailVal = (document.getElementById('email').value || '').trim();
+    if (isOtherDistrict) {
+        const otherDistrictInput = document.getElementById('otherDistrict');
+        const otherPanchayatInput = document.getElementById('otherPanchayat');
+        const otherVillageInput = document.getElementById('otherVillage');
 
-    // 0. Location Validation
-    if (!blockVal) {
-        alert('⚠️ कृपया ब्लॉक का चयन करें।\nPlease select a Block.');
-        document.getElementById('block').focus();
-        return;
-    }
+        const districtName = (otherDistrictInput ? otherDistrictInput.value : '').trim();
+        panchayatVal = (otherPanchayatInput ? otherPanchayatInput.value : '').trim();
+        villageVal = (otherVillageInput ? otherVillageInput.value : '').trim();
 
-    if (!panchayatVal) {
-        alert('⚠️ कृपया ग्राम पंचायत का चयन करें या दर्ज करें।\nPlease select or enter Gram Panchayat.');
-        if (panchayatSelect && panchayatSelect.value === '__OTHER__' && panchayatCustom) {
-            panchayatCustom.focus();
-        } else if (panchayatSelect) {
-            panchayatSelect.focus();
+        if (!districtName) {
+            alert(lang === 'en' ? '⚠️ Please enter District Name.' : '⚠️ कृपया जिला का नाम दर्ज करें।\nPlease enter District name.');
+            if (otherDistrictInput) otherDistrictInput.focus();
+            return;
         }
-        return;
-    }
 
-    if (!villageVal) {
-        alert('⚠️ कृपया ग्राम का चयन करें या दर्ज करें।\nPlease select or enter Village name.');
-        if (villageInput) {
-            villageInput.focus();
+        if (!panchayatVal) {
+            alert(lang === 'en' ? '⚠️ Please enter Gram Panchayat Name.' : '⚠️ कृपया ग्राम पंचायत का नाम दर्ज करें।\nPlease enter Gram Panchayat name.');
+            if (otherPanchayatInput) otherPanchayatInput.focus();
+            return;
         }
-        return;
+
+        if (!villageVal) {
+            alert(lang === 'en' ? '⚠️ Please enter Village Name.' : '⚠️ कृपया ग्राम का नाम दर्ज करें।\nPlease enter Village name.');
+            if (otherVillageInput) otherVillageInput.focus();
+            return;
+        }
+
+        blockVal = `अन्य जिला (${districtName})`;
+    } else {
+        // 0. Standard Location Validation
+        if (!blockVal) {
+            alert(lang === 'en' ? '⚠️ Please select a Block.' : '⚠️ कृपया ब्लॉक का चयन करें।\nPlease select a Block.');
+            if (blockSelect) blockSelect.focus();
+            return;
+        }
+
+        const panchayatSelect = document.getElementById('panchayat');
+        const panchayatCustom = document.getElementById('panchayatCustom');
+        panchayatVal = (panchayatSelect && panchayatSelect.value === '__OTHER__')
+            ? (panchayatCustom ? panchayatCustom.value.trim() : '')
+            : (panchayatSelect ? panchayatSelect.value.trim() : '');
+
+        if (!panchayatVal) {
+            alert(lang === 'en' ? '⚠️ Please select or enter Gram Panchayat.' : '⚠️ कृपया ग्राम पंचायत का चयन करें या दर्ज करें।\nPlease select or enter Gram Panchayat.');
+            if (panchayatSelect && panchayatSelect.value === '__OTHER__' && panchayatCustom) {
+                panchayatCustom.focus();
+            } else if (panchayatSelect) {
+                panchayatSelect.focus();
+            }
+            return;
+        }
+
+        const villageInput = document.getElementById('village');
+        villageVal = (villageInput ? villageInput.value.trim() : '');
+        if (villageVal.includes('(')) {
+            villageVal = villageVal.split('(')[0].trim();
+        }
+
+        if (!villageVal) {
+            alert(lang === 'en' ? '⚠️ Please select or enter Village name.' : '⚠️ कृपया ग्राम का चयन करें या दर्ज करें।\nPlease select or enter Village name.');
+            if (villageInput) villageInput.focus();
+            return;
+        }
     }
 
     // 1. Phone Validation: If provided, must be 10 digits
@@ -2549,7 +2684,12 @@ function displayGrievances() {
         const statusConfig = (currentConfig.statuses || []).find(s => String(s.id).trim() === currentStatus);
         const statusColor = statusConfig ? statusConfig.color : '#2563eb';
         const normBlock = normalizeBlock(g.block);
-        const displayBlock = normBlock ? (lang === 'en' ? normBlock.en : normBlock.hi) : g.block;
+        let displayBlock = normBlock ? (lang === 'en' ? normBlock.en : normBlock.hi) : g.block;
+        if (!normBlock && g.block && (g.block.includes('अन्य जिला') || g.block.toLowerCase().includes('other district'))) {
+            if (lang === 'en') {
+                displayBlock = String(displayBlock).replace('अन्य जिला', 'Other District');
+            }
+        }
         const locationText = [displayBlock, g.panchayat, g.village].filter(Boolean).join(' • ');
 
         let statusOptionsHtml = '';

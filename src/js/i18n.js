@@ -84,6 +84,15 @@ export const TRANSLATIONS = {
     phDescription: "अपनी शिकायत का विस्तृत विवरण यहाँ दर्ज करें...",
     phRemarks: "कोई अतिरिक्त जानकारी यहाँ जोड़ें...",
     phSearch: "नाम, फोन, आधार, कारण या ब्लॉक से खोजें...",
+    phOtherDistrict: "जिले का नाम लिखें (उदा. सुकमा, बस्तर, बीजापुर आदि)",
+    phOtherPanchayat: "ग्राम पंचायत का नाम लिखें",
+    phOtherVillage: "गाँव / ग्राम का नाम लिखें",
+
+    // Other District Labels
+    lblOtherDistrict: "जिला का नाम",
+    lblOtherPanchayat: "ग्राम पंचायत का नाम",
+    lblOtherVillage: "ग्राम / गाँव का नाम",
+    lblOtherDistrictBadge: "अन्य जिला प्रकरण (प्रकरण संबंधित जिले को अग्रेषित किया जाएगा)",
 
     // Select Options
     optSelectBlock: "-- चयन करें / Select Block --",
@@ -92,7 +101,8 @@ export const TRANSLATIONS = {
     optSelectVillageFirst: "-- पहले ग्राम पंचायत चुनें --",
     optSelectVillage: "-- ग्राम चुनें --",
     optSelectReason: "-- कारण चुनें / Select Reason --",
-    optOther: "➕ अन्य (मैन्युअल दर्ज करें)",
+    optOther: "➕ अन्य जिला (मैन्युअल दर्ज करें)",
+    optOtherDistrict: "➕ अन्य जिला (मैन्युअल दर्ज करें)",
     optAllStatuses: "सभी स्थितियां",
     optAllDates: "📅 सभी तिथियां",
     optDateToday: "📅 आज",
@@ -232,6 +242,15 @@ export const TRANSLATIONS = {
     phDescription: "Enter detailed description of your grievance here...",
     phRemarks: "Add any additional remarks here...",
     phSearch: "Search by Name, Phone, Aadhaar, Reason or Block...",
+    phOtherDistrict: "Enter District Name (e.g. Sukma, Bastar, Bijapur...)",
+    phOtherPanchayat: "Enter Gram Panchayat Name",
+    phOtherVillage: "Enter Village Name",
+
+    // Other District Labels
+    lblOtherDistrict: "District Name",
+    lblOtherPanchayat: "Gram Panchayat Name",
+    lblOtherVillage: "Village / Town Name",
+    lblOtherDistrictBadge: "Other District Case (Will be forwarded to respective district)",
 
     // Select Options
     optSelectBlock: "-- Select Block --",
@@ -240,7 +259,8 @@ export const TRANSLATIONS = {
     optSelectVillageFirst: "-- Select Panchayat First --",
     optSelectVillage: "-- Select Village --",
     optSelectReason: "-- Select Reason --",
-    optOther: "➕ Other (Enter Manually)",
+    optOther: "➕ Other District (Enter Manually)",
+    optOtherDistrict: "➕ Other District (Enter Manually)",
     optAllStatuses: "All Statuses",
     optAllDates: "📅 All Dates",
     optDateToday: "📅 Today",
