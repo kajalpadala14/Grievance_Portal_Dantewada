@@ -120,7 +120,7 @@ body {
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
     border: 1px solid var(--slate-200);
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
 }
@@ -129,6 +129,7 @@ body {
 .top-tricolor-bar {
     height: 5px;
     width: 100%;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     background: linear-gradient(90deg, 
         #ff9933 0%, #ff9933 33.33%, 
         #ffffff 33.33%, #ffffff 66.66%, 
@@ -1870,6 +1871,7 @@ textarea {
     font-size: 13px;
     color: var(--slate-500);
     border-top: 1px solid var(--slate-200);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1998,16 +2000,32 @@ textarea {
     }
 
     .button-group {
-        flex-direction: column-reverse;
+        flex-direction: row;
         gap: 10px;
         padding: 12px 14px;
+        position: sticky;
+        bottom: 0;
+        z-index: 95;
         border-radius: 0;
+        box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
     }
 
-    .btn-submit,
+    .btn-submit {
+        flex: 2;
+        width: auto;
+        min-width: 0;
+        padding: 13px 14px;
+        font-size: 14px;
+        order: 1;
+    }
+
     .btn-reset {
-        width: 100%;
-        min-width: unset;
+        flex: 1;
+        width: auto;
+        min-width: 0;
+        padding: 13px 10px;
+        font-size: 13px;
+        order: 2;
     }
 
     .table-wrapper {
@@ -2612,4 +2630,17 @@ textarea {
     [data-theme="dark"] .grievance-table td:first-child {
         border-bottom-color: #334155;
     }
+}
+
+/* Shake Animation for Invalid Inputs */
+@keyframes shakeInvalid {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+.input-error-shake {
+    animation: shakeInvalid 0.4s ease-in-out !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
 }

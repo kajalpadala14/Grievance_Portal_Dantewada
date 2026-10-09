@@ -544,7 +544,13 @@
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification"></div>
 
-    <!-- External JavaScript (ES Module) -->
+    <!-- Dual-Mode Script Loader: Guaranteed to work in both file:// offline and HTTP/Vite Server -->
+    <script>
+        window.__APPS_SCRIPT_URL__ = 'https://script.google.com/macros/s/AKfycbyhxyByWiY0_ivzoLJDKs1pi6qz42_0Vx0lu-ABgc__TsJZdTjidKvZeeGInQCoqtgQ/exec';
+        if (window.location.protocol === 'file:') {
+            document.write('<script src="bundle.js"><\/script>');
+        }
+    </script>
     <script type="module" src="src/js/script.js"></script>
 </body>
 </html>

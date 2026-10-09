@@ -949,7 +949,10 @@ function handleBlockChange() {
         // Hide Dantewada cascading dropdowns
         if (dantewadaPanchayatGroup) dantewadaPanchayatGroup.style.display = 'none';
         if (dantewadaVillageGrid) dantewadaVillageGrid.style.display = 'none';
-        if (panchayatCustom) panchayatCustom.style.display = 'none';
+        if (panchayatCustom) {
+            panchayatCustom.style.display = 'none';
+            panchayatCustom.required = false;
+        }
 
         if (panchayatSelect) {
             panchayatSelect.required = false;
@@ -1011,7 +1014,10 @@ function handleBlockChange() {
         emailInput.value = otherEmailInput.value;
     }
 
-    if (panchayatCustom) panchayatCustom.style.display = 'none';
+    if (panchayatCustom) {
+        panchayatCustom.style.display = 'none';
+        panchayatCustom.required = false;
+    }
 
     const found = findBlockInLocations(currentConfig.locations, selectedBlock);
 
@@ -1344,6 +1350,12 @@ function resetGrievanceForm(isFromNativeReset = false) {
         if (otherPanchayatInput) otherPanchayatInput.value = '';
         if (otherVillageInput) otherVillageInput.value = '';
         if (otherEmailInput) otherEmailInput.value = '';
+        const panchayatCustom = document.getElementById('panchayatCustom');
+        if (panchayatCustom) {
+            panchayatCustom.value = '';
+            panchayatCustom.required = false;
+            panchayatCustom.style.display = 'none';
+        }
 
         clearVillage(false);
         handleBlockChange();
@@ -1390,6 +1402,24 @@ function setupEventListeners() {
                 }
             }, 10);
         });
+
+        // Ensure submit button triggers clear field highlighting if form is invalid
+        const submitBtnEl = document.getElementById('submitGrievanceBtn');
+        if (submitBtnEl) {
+            submitBtnEl.addEventListener('click', () => {
+                if (isSubmittingGrievance) return;
+                if (form && !form.checkValidity()) {
+                    form.reportValidity();
+                    const firstInvalid = form.querySelector(':invalid');
+                    if (firstInvalid) {
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        firstInvalid.focus();
+                        firstInvalid.classList.add('input-error-shake');
+                        setTimeout(() => firstInvalid.classList.remove('input-error-shake'), 800);
+                    }
+                }
+            });
+        }
     }
 
     // Village Input & Interactive Dropdown Listeners
@@ -1827,15 +1857,17 @@ export function switchTab(tabIndex) {
  * Handle form submission
  */
 async function handleFormSubmit(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+        e.preventDefault();
+    }
 
     // Prevent duplicate submissions / rapid multiple clicks
     if (isSubmittingGrievance) {
         return;
     }
 
-    const submitBtn = document.querySelector('.btn-submit');
-    const originalBtnText = submitBtn ? submitBtn.innerHTML : '✓ जमा करें | SUBMIT';
+    const submitBtn = document.getElementById('submitGrievanceBtn') || document.querySelector('.btn-submit');
+    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
 
     const blockSelect = document.getElementById('block');
     const rawBlockVal = (blockSelect ? blockSelect.value : '').trim();
@@ -1844,11 +1876,19 @@ async function handleFormSubmit(e) {
     let blockVal = rawBlockVal;
     let panchayatVal = '';
     let villageVal = '';
+
+    const phoneInput = document.getElementById('phone');
+    const phoneVal = (phoneInput ? phoneInput.value : '').trim();
+
+    const aadharInput = document.getElementById('aadhar');
+    const aadharVal = (aadharInput ? aadharInput.value : '').trim();
+
+    const enrollmentInput = document.getElementById('enrollment');
+    const enrollmentVal = (enrollmentInput ? enrollmentInput.value : '').trim();
+
     const otherEmailInput = document.getElementById('otherEmail');
     const emailInput = document.getElementById('email');
     const emailVal = ((otherEmailInput && otherEmailInput.value) || (emailInput && emailInput.value) || '').trim();
-
-    const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
 
     if (isOtherDistrict) {
         const otherDistrictInput = document.getElementById('otherDistrict');
@@ -1861,19 +1901,28 @@ async function handleFormSubmit(e) {
 
         if (!districtName) {
             alert(lang === 'en' ? '⚠️ Please enter District Name.' : '⚠️ कृपया जिला का नाम दर्ज करें।\nPlease enter District name.');
-            if (otherDistrictInput) otherDistrictInput.focus();
+            if (otherDistrictInput) {
+                otherDistrictInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                otherDistrictInput.focus();
+            }
             return;
         }
 
         if (!panchayatVal) {
             alert(lang === 'en' ? '⚠️ Please enter Gram Panchayat Name.' : '⚠️ कृपया ग्राम पंचायत का नाम दर्ज करें।\nPlease enter Gram Panchayat name.');
-            if (otherPanchayatInput) otherPanchayatInput.focus();
+            if (otherPanchayatInput) {
+                otherPanchayatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                otherPanchayatInput.focus();
+            }
             return;
         }
 
         if (!villageVal) {
             alert(lang === 'en' ? '⚠️ Please enter Village Name.' : '⚠️ कृपया ग्राम का नाम दर्ज करें।\nPlease enter Village name.');
-            if (otherVillageInput) otherVillageInput.focus();
+            if (otherVillageInput) {
+                otherVillageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                otherVillageInput.focus();
+            }
             return;
         }
 
@@ -1882,7 +1931,10 @@ async function handleFormSubmit(e) {
         // 0. Standard Location Validation
         if (!blockVal) {
             alert(lang === 'en' ? '⚠️ Please select a Block.' : '⚠️ कृपया ब्लॉक का चयन करें।\nPlease select a Block.');
-            if (blockSelect) blockSelect.focus();
+            if (blockSelect) {
+                blockSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                blockSelect.focus();
+            }
             return;
         }
 
@@ -1895,8 +1947,10 @@ async function handleFormSubmit(e) {
         if (!panchayatVal) {
             alert(lang === 'en' ? '⚠️ Please select or enter Gram Panchayat.' : '⚠️ कृपया ग्राम पंचायत का चयन करें या दर्ज करें।\nPlease select or enter Gram Panchayat.');
             if (panchayatSelect && panchayatSelect.value === '__OTHER__' && panchayatCustom) {
+                panchayatCustom.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 panchayatCustom.focus();
             } else if (panchayatSelect) {
+                panchayatSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 panchayatSelect.focus();
             }
             return;
@@ -1910,55 +1964,72 @@ async function handleFormSubmit(e) {
 
         if (!villageVal) {
             alert(lang === 'en' ? '⚠️ Please select or enter Village name.' : '⚠️ कृपया ग्राम का चयन करें या दर्ज करें।\nPlease select or enter Village name.');
-            if (villageInput) villageInput.focus();
+            if (villageInput) {
+                villageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                villageInput.focus();
+            }
             return;
         }
     }
 
     // 1. Phone Validation: If provided, must be 10 digits
     if (phoneVal && phoneVal.length !== 10) {
-        alert('⚠️ कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।\nPlease enter a valid 10-digit phone number.');
-        document.getElementById('phone').focus();
+        alert(lang === 'en' ? '⚠️ Please enter a valid 10-digit phone number.' : '⚠️ कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।\nPlease enter a valid 10-digit phone number.');
+        if (phoneInput) {
+            phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            phoneInput.focus();
+        }
         return;
     }
 
     // 2. Aadhaar Validation: If provided, must be either 4 digits (last 4) or 12 digits
     if (aadharVal) {
-        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
         const checkedMode = document.querySelector('input[name="aadharMode"]:checked')?.value || '12';
         if (checkedMode === '4' && aadharVal.length !== 4) {
             alert(lang === 'en'
                 ? `⚠️ Last 4 digits of Aadhaar must be exactly 4 digits.\nCurrent length: ${aadharVal.length}`
                 : `⚠️ आधार के अंतिम 4 अंक ठीक 4 अंकों के होने चाहिए।\nवर्तमान में ${aadharVal.length} अंक दर्ज हैं।`);
-            document.getElementById('aadhar').focus();
+            if (aadharInput) {
+                aadharInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                aadharInput.focus();
+            }
             return;
         }
         if (aadharVal.length !== 4 && aadharVal.length !== 12) {
             alert(lang === 'en'
                 ? `⚠️ Aadhaar number must be either 4 digits (last 4 digits) or 12 digits.\nCurrent length: ${aadharVal.length}`
                 : `⚠️ आधार नंबर या तो 4 अंक (अंतिम 4 अंक) या पूरे 12 अंकों का होना चाहिए।\nवर्तमान में ${aadharVal.length} अंक दर्ज हैं।`);
-            document.getElementById('aadhar').focus();
+            if (aadharInput) {
+                aadharInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                aadharInput.focus();
+            }
             return;
         }
     }
 
     // 3. Enrollment Validation: If provided, must be exactly 28 characters
     if (enrollmentVal && enrollmentVal.length !== 28) {
-        const lang = (typeof getCurrentLanguage === 'function') ? getCurrentLanguage() : 'hi';
         alert(lang === 'en'
             ? `⚠️ Enrollment number must be exactly 28 characters (letters/digits).\nCurrent length: ${enrollmentVal.length}`
             : `⚠️ एनरोलमेंट नंबर ठीक 28 वर्णों (अंक/अक्षर) का होना चाहिए।\nEnrollment number must be exactly 28 characters.`);
-        document.getElementById('enrollment').focus();
+        if (enrollmentInput) {
+            enrollmentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            enrollmentInput.focus();
+        }
         return;
     }
 
     // 4. Email Validation: If provided, must be valid email format
     if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-        alert('⚠️ कृपया एक मान्य ईमेल पता दर्ज करें (उदा. example@gmail.com)\nPlease enter a valid email address.');
-        document.getElementById('email').focus();
+        alert(lang === 'en' ? '⚠️ Please enter a valid email address.' : '⚠️ कृपया एक मान्य ईमेल पता दर्ज करें (उदा. example@gmail.com)\nPlease enter a valid email address.');
+        const activeEmail = isOtherDistrict ? otherEmailInput : emailInput;
+        if (activeEmail) {
+            activeEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            activeEmail.focus();
+        }
         return;
     }
-    
+
     // Lock submission flag & disable submit button immediately
     isSubmittingGrievance = true;
     if (submitBtn) {
@@ -1974,9 +2045,9 @@ async function handleFormSubmit(e) {
 
     const grievance = {
         id: 'GRV-' + Date.now(),
-        applicantName: document.getElementById('applicantName').value,
-        fatherName: document.getElementById('fatherName').value,
-        age: document.getElementById('age').value,
+        applicantName: (document.getElementById('applicantName')?.value || '').trim(),
+        fatherName: (document.getElementById('fatherName')?.value || '').trim(),
+        age: (document.getElementById('age')?.value || '').trim(),
         phone: phoneVal,
         block: blockVal,
         panchayat: panchayatVal,
@@ -1984,11 +2055,11 @@ async function handleFormSubmit(e) {
         email: emailVal,
         aadhar: aadharVal,
         enrollment: enrollmentVal,
-        reason: document.getElementById('reason').value,
-        description: document.getElementById('description').value,
+        reason: (document.getElementById('reason')?.value || '').trim(),
+        description: (document.getElementById('description')?.value || '').trim(),
         status: selectedStatus ? selectedStatus.value : defaultStatus,
-        remarks: document.getElementById('remarks').value,
-        date: document.getElementById('date').value
+        remarks: (document.getElementById('remarks')?.value || '').trim(),
+        date: (document.getElementById('date')?.value || '').trim()
     };
 
     try {
@@ -2017,7 +2088,7 @@ async function handleFormSubmit(e) {
         }, 7000);
 
     } catch (err) {
-        alert('त्रुटि: शिकायत जमा करने में समस्या आई। कृपया पुनः प्रयास करें।');
+        alert(lang === 'en' ? 'Error: Problem submitting grievance. Please try again.' : 'त्रुटि: शिकायत जमा करने में समस्या आई। कृपया पुनः प्रयास करें।');
         console.error(err);
     } finally {
         if (submitBtn) {
@@ -2030,7 +2101,7 @@ async function handleFormSubmit(e) {
         // Cooldown timer to prevent rapid duplicate clicks
         setTimeout(() => {
             isSubmittingGrievance = false;
-        }, 1200);
+        }, 800);
     }
 }
 

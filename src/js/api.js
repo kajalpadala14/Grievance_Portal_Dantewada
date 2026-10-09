@@ -13,6 +13,9 @@ export const APPS_SCRIPT_URL = (() => {
       url = window.__APPS_SCRIPT_URL__;
     }
   } catch (e) {}
+  if (!url) {
+    url = "https://script.google.com/macros/s/AKfycbyhxyByWiY0_ivzoLJDKs1pi6qz42_0Vx0lu-ABgc__TsJZdTjidKvZeeGInQCoqtgQ/exec";
+  }
   url = (url || "").trim().replace(/\/+$/, "");
   if (url && !url.endsWith("/exec")) {
     url += "/exec";
