@@ -517,7 +517,10 @@
                 </div>
                 <div class="modal-info-row">
                     <span class="modal-label" data-i18n="modalLblName">आवेदक का नाम:</span>
-                    <span class="modal-val" id="editStatusDisplayName">-</span>
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="modal-val" id="editStatusDisplayName">-</span>
+                        <button type="button" class="btn-edit-name-trigger" id="btnEditNameFromStatusModal" title="नाम संपादित करें | Edit Name">✏️ <span data-i18n="btnEditName">नाम बदलें</span></button>
+                    </span>
                 </div>
                 <div class="modal-info-row">
                     <span class="modal-label" data-i18n="thReason">कारण:</span>
@@ -537,6 +540,39 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-close" id="saveStatusModalBtn" data-i18n="btnSaveStatus">✓ स्थिति सुरक्षित करें</button>
                 <button type="button" class="btn-modal-secondary" id="cancelStatusModalBtn" data-i18n="btnCancel">रद्द करें</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Name Edit Modal Popup -->
+    <div class="modal-overlay" id="nameEditModal">
+        <div class="modal-card">
+            <div class="modal-icon-wrapper" style="background: rgba(16, 185, 129, 0.1); color: #059669;">
+                <div class="modal-icon-circle" style="background: #059669; color: white;">✏️</div>
+            </div>
+            <h2 class="modal-title" data-i18n="modalNameTitle">आवेदक का नाम संपादित करें</h2>
+            <p class="modal-subtitle" data-i18n="modalNameSub">आवेदक एवं पिता/पति का नाम अपडेट करें</p>
+            
+            <div class="modal-body">
+                <input type="hidden" id="editNameGrievanceId">
+                <input type="hidden" id="editNameRowNumber">
+                <div class="modal-info-row">
+                    <span class="modal-label" data-i18n="modalLblId">शिकायत क्रमांक (ID):</span>
+                    <strong class="modal-val" id="editNameDisplayId">-</strong>
+                </div>
+                <div style="margin-top: 12px; text-align: left;">
+                    <label for="editApplicantNameInput" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--slate-700);" data-i18n="lblEditApplicantName">हितग्राही / आवेदक का नाम *</label>
+                    <input type="text" id="editApplicantNameInput" required style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--slate-300); border-radius: var(--radius-md); font-size: 13.5px; background: var(--white); color: var(--slate-900); box-sizing: border-box;" data-i18n-ph="phEditApplicantName" placeholder="पूरा नाम दर्ज करें...">
+                </div>
+                <div style="margin-top: 12px; text-align: left;">
+                    <label for="editFatherNameInput" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--slate-700);" data-i18n="lblEditFatherName">पिता / पति का नाम</label>
+                    <input type="text" id="editFatherNameInput" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--slate-300); border-radius: var(--radius-md); font-size: 13.5px; background: var(--white); color: var(--slate-900); box-sizing: border-box;" data-i18n-ph="phEditFatherName" placeholder="पिता या पति का नाम...">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-close" id="saveNameModalBtn" data-i18n="btnSaveName">✓ नाम सुरक्षित करें</button>
+                <button type="button" class="btn-modal-secondary" id="cancelNameModalBtn" data-i18n="btnCancel">रद्द करें</button>
             </div>
         </div>
     </div>

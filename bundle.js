@@ -143,6 +143,20 @@
       statusUpdatedSuccess: "✓ स्थिति सफलतापूर्वक अपडेट कर दी गई!",
       statusUpdateFailed: "⚠️ स्थिति अपडेट करने में त्रुटि हुई",
       actionEditStatus: "स्थिति बदलें",
+      // Name Edit Modal & Toast
+      modalNameTitle: "आवेदक का नाम संपादित करें",
+      modalNameSub: "आवेदक एवं पिता/पति का नाम अपडेट करें",
+      lblEditApplicantName: "हितग्राही / आवेदक का नाम *",
+      lblEditFatherName: "पिता / पति का नाम",
+      phEditApplicantName: "पूरा नाम दर्ज करें...",
+      phEditFatherName: "पिता या पति का नाम...",
+      btnSaveName: "✓ नाम सुरक्षित करें",
+      btnSavingName: "⏳ नाम अपडेट हो रहा है...",
+      nameUpdatedSuccess: "✓ नाम सफलतापूर्वक अपडेट कर दिया गया!",
+      nameUpdateFailed: "⚠️ नाम अपडेट करने में त्रुटि हुई",
+      actionEditName: "नाम संपादित करें",
+      btnEditName: "नाम बदलें",
+      valNameRequired: "कृपया आवेदक का नाम दर्ज करें",
       // Footer
       portalCopyright: "© 2026 दक्षिण बस्तर दंतेवाडा जिला | सर्वाधिकार सुरक्षित",
       portalHours: "शिकायत पंजीकरण समय: 10:00 AM - 5:00 PM (सोमवार - शुक्रवार)"
@@ -288,6 +302,20 @@
       statusUpdatedSuccess: "✓ Status updated successfully!",
       statusUpdateFailed: "⚠️ Failed to update status",
       actionEditStatus: "Change Status",
+      // Name Edit Modal & Toast
+      modalNameTitle: "Edit Applicant Name",
+      modalNameSub: "Update applicant and father/husband name",
+      lblEditApplicantName: "Applicant Name *",
+      lblEditFatherName: "Father / Husband Name",
+      phEditApplicantName: "Enter full name...",
+      phEditFatherName: "Enter father/husband name...",
+      btnSaveName: "✓ Save Name",
+      btnSavingName: "⏳ Saving Name...",
+      nameUpdatedSuccess: "✓ Name updated successfully!",
+      nameUpdateFailed: "⚠️ Failed to update name",
+      actionEditName: "Edit Name",
+      btnEditName: "Edit Name",
+      valNameRequired: "Please enter applicant name",
       // Footer
       portalCopyright: "© 2026 South Bastar Dantewada District | All Rights Reserved",
       portalHours: "Grievance Registration Hours: 10:00 AM - 5:00 PM (Monday - Friday)"
@@ -687,6 +715,59 @@
         }
       } catch (err) {
         backendError = err.message || "Network Error while updating status.";
+      }
+    }
+    return {
+      success: true,
+      syncedToSheet: backendSuccess,
+      error: backendError
+    };
+  }
+  async function updateGrievanceName(id, newApplicantName, newFatherName = null, rowNumber = null) {
+    let backendSuccess = false;
+    let backendError = null;
+    const localGrievances = getStoredGrievances();
+    const index = localGrievances.findIndex((g) => String(g.id) === String(id) || rowNumber && String(g.rowNumber) === String(rowNumber));
+    if (index !== -1) {
+      localGrievances[index].applicantName = newApplicantName;
+      if (newFatherName !== null && newFatherName !== void 0) {
+        localGrievances[index].fatherName = newFatherName;
+      }
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localGrievances));
+    }
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
+      try {
+        const payload = {
+          action: "updateName",
+          id,
+          applicantName: newApplicantName
+        };
+        if (rowNumber) payload.rowNumber = rowNumber;
+        if (newFatherName !== null && newFatherName !== void 0) payload.fatherName = newFatherName;
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "cors",
+          redirect: "follow",
+          credentials: "omit",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+        const responseText = await response.text();
+        try {
+          const result = JSON.parse(responseText);
+          if (result.success) {
+            backendSuccess = true;
+            console.log("[API] Applicant name updated in Google Sheet successfully:", result);
+          } else {
+            backendError = result.error || "Failed to update name in Google Sheet.";
+          }
+        } catch (parseErr) {
+          backendError = "Apps Script returned non-JSON response.";
+        }
+      } catch (err) {
+        backendError = err.message || "Network Error while updating name.";
       }
     }
     return {
@@ -1980,6 +2061,7 @@
       if (e.key === "Escape") {
         closeSubmissionModal();
         closeStatusEditModal();
+        closeNameEditModal();
       }
     });
     const saveStatusModalBtn = document.getElementById("saveStatusModalBtn");
@@ -2007,6 +2089,60 @@
         }
       });
     }
+    const btnEditNameFromStatusModal = document.getElementById("btnEditNameFromStatusModal");
+    if (btnEditNameFromStatusModal) {
+      btnEditNameFromStatusModal.addEventListener("click", () => {
+        const id = document.getElementById("editStatusGrievanceId")?.value;
+        if (id) {
+          closeStatusEditModal();
+          openNameEditModal(id);
+        }
+      });
+    }
+    const saveNameModalBtn = document.getElementById("saveNameModalBtn");
+    if (saveNameModalBtn) {
+      saveNameModalBtn.addEventListener("click", async () => {
+        const id = document.getElementById("editNameGrievanceId")?.value;
+        const rowNumber = document.getElementById("editNameRowNumber")?.value;
+        const newApplicantName = document.getElementById("editApplicantNameInput")?.value?.trim();
+        const newFatherName = document.getElementById("editFatherNameInput")?.value?.trim();
+        const lang = getCurrentLanguage();
+        const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+        if (!newApplicantName) {
+          alert(t.valNameRequired || "कृपया आवेदक का नाम दर्ज करें");
+          document.getElementById("editApplicantNameInput")?.focus();
+          return;
+        }
+        if (id && newApplicantName) {
+          closeNameEditModal();
+          await changeGrievanceName(id, newApplicantName, newFatherName, rowNumber);
+        }
+      });
+    }
+    const cancelNameModalBtn = document.getElementById("cancelNameModalBtn");
+    if (cancelNameModalBtn) {
+      cancelNameModalBtn.addEventListener("click", closeNameEditModal);
+    }
+    const nameModal = document.getElementById("nameEditModal");
+    if (nameModal) {
+      nameModal.addEventListener("click", (e) => {
+        if (e.target === nameModal) {
+          closeNameEditModal();
+        }
+      });
+    }
+    const editApplicantNameInput = document.getElementById("editApplicantNameInput");
+    const editFatherNameInput = document.getElementById("editFatherNameInput");
+    [editApplicantNameInput, editFatherNameInput].forEach((inp) => {
+      if (inp) {
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            saveNameModalBtn?.click();
+          }
+        });
+      }
+    });
     const grievancesContainer = document.getElementById("grievancesContainer");
     if (grievancesContainer) {
       grievancesContainer.addEventListener("change", (e) => {
@@ -2020,12 +2156,21 @@
         }
       });
       grievancesContainer.addEventListener("click", (e) => {
-        const btn = e.target.closest(".btn-status-edit-modal");
-        if (btn) {
-          const id = btn.getAttribute("data-id");
+        const statusBtn = e.target.closest(".btn-status-edit-modal");
+        if (statusBtn) {
+          const id = statusBtn.getAttribute("data-id");
           if (id) {
             openStatusEditModal(id);
           }
+          return;
+        }
+        const nameBtn = e.target.closest(".btn-name-edit-modal");
+        if (nameBtn) {
+          const id = nameBtn.getAttribute("data-id");
+          if (id) {
+            openNameEditModal(id);
+          }
+          return;
         }
       });
     }
@@ -2468,6 +2613,55 @@ Enrollment number must be exactly 28 characters.`);
       showToast(t.statusUpdateFailed || "⚠️ स्थिति अपडेट करने में त्रुटि हुई", true);
     }
   }
+  function openNameEditModal(id) {
+    const g = grievances.find((item) => String(item.id) === String(id));
+    if (!g) return;
+    const modal = document.getElementById("nameEditModal");
+    const idInput = document.getElementById("editNameGrievanceId");
+    const rowInput = document.getElementById("editNameRowNumber");
+    const displayId = document.getElementById("editNameDisplayId");
+    const applicantNameInput = document.getElementById("editApplicantNameInput");
+    const fatherNameInput = document.getElementById("editFatherNameInput");
+    if (!modal) return;
+    if (idInput) idInput.value = g.id || "";
+    if (rowInput) rowInput.value = g.rowNumber || "";
+    if (displayId) displayId.textContent = g.id || "-";
+    if (applicantNameInput) applicantNameInput.value = g.applicantName || "";
+    if (fatherNameInput) fatherNameInput.value = g.fatherName || "";
+    modal.classList.add("show");
+    setTimeout(() => {
+      applicantNameInput?.focus();
+      applicantNameInput?.select();
+    }, 100);
+  }
+  function closeNameEditModal() {
+    const modal = document.getElementById("nameEditModal");
+    if (modal) {
+      modal.classList.remove("show");
+    }
+  }
+  async function changeGrievanceName(id, newApplicantName, newFatherName = null, rowNumber = null) {
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+    const gIndex = grievances.findIndex((g) => String(g.id) === String(id) || rowNumber && String(g.rowNumber) === String(rowNumber));
+    if (gIndex === -1) return;
+    const target = grievances[gIndex];
+    target.applicantName = newApplicantName;
+    if (newFatherName !== null && newFatherName !== void 0) {
+      target.fatherName = newFatherName;
+    }
+    displayGrievances();
+    showToast(`${t.nameUpdatedSuccess || "✓ नाम सफलतापूर्वक अपडेट कर दिया गया!"} (${newApplicantName})`);
+    try {
+      const result = await updateGrievanceName(id, newApplicantName, newFatherName, rowNumber || target.rowNumber);
+      if (result && !result.syncedToSheet && result.error) {
+        console.warn("[Name] Synced locally, but Google Sheet warning:", result.error);
+      }
+    } catch (err) {
+      console.error("[Name] Error syncing name to Google Sheet:", err);
+      showToast(t.nameUpdateFailed || "⚠️ नाम अपडेट करने में त्रुटि हुई", true);
+    }
+  }
   function showSubmissionFeedback(synced, errorMsg = "") {
     const message = document.getElementById("successMessage");
     if (!message) return;
@@ -2865,8 +3059,13 @@ Enrollment number must be exactly 28 characters.`);
       html += `
             <tr>
                 <td data-label="आवेदक | Applicant">
-                    <span class="table-applicant-name">${escapeHtml(g.applicantName || "अज्ञात / Unknown")}</span>
-                    <span class="table-applicant-sub">${escapeHtml(g.phone ? "📞 " + g.phone : g.fatherName ? "पिता: " + g.fatherName : "")}</span>
+                    <div class="table-applicant-wrap">
+                        <div class="table-applicant-info">
+                            <span class="table-applicant-name">${escapeHtml(g.applicantName || "अज्ञात / Unknown")}</span>
+                            <span class="table-applicant-sub">${escapeHtml(g.phone ? "📞 " + g.phone : g.fatherName ? "पिता: " + g.fatherName : "")}</span>
+                        </div>
+                        <button type="button" class="btn-name-edit-modal" data-id="${escapeHtml(g.id)}" title="${escapeHtml(t.actionEditName || "नाम संपादित करें | Edit Name")}" aria-label="Edit Name">✏️</button>
+                    </div>
                 </td>
                 <td data-label="स्थान | Location">${escapeHtml(locationText || "-")}</td>
                 <td data-label="कारण | Reason"><strong>${escapeHtml(g.reason || "-")}</strong></td>
@@ -2919,6 +3118,8 @@ Enrollment number must be exactly 28 characters.`);
   window.__toggleLanguage = toggleLanguage;
   window.openStatusEditModal = openStatusEditModal;
   window.closeStatusEditModal = closeStatusEditModal;
+  window.openNameEditModal = openNameEditModal;
+  window.closeNameEditModal = closeNameEditModal;
   window.__onLanguageChanged = function(lang) {
     updateThemeToggleButton(getCurrentTheme());
     renderFormOptions(currentConfig);

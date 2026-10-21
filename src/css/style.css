@@ -1642,6 +1642,74 @@ textarea {
     background: #334155;
 }
 
+/* Applicant Name Edit Controls */
+.table-applicant-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+}
+
+.table-applicant-info {
+    min-width: 0;
+}
+
+.btn-name-edit-modal {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13.5px;
+    opacity: 0.65;
+    transition: var(--transition);
+    padding: 3px 5px;
+    border-radius: var(--radius-sm);
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.btn-name-edit-modal:hover {
+    opacity: 1;
+    transform: scale(1.15);
+    background: var(--slate-100);
+}
+
+[data-theme="dark"] .btn-name-edit-modal:hover {
+    background: #334155;
+}
+
+.btn-edit-name-trigger {
+    background: rgba(37, 99, 235, 0.08);
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.btn-edit-name-trigger:hover {
+    background: rgba(37, 99, 235, 0.16);
+    transform: translateY(-1px);
+}
+
+[data-theme="dark"] .btn-edit-name-trigger {
+    background: rgba(96, 165, 250, 0.15);
+    border-color: rgba(96, 165, 250, 0.35);
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .btn-edit-name-trigger:hover {
+    background: rgba(96, 165, 250, 0.25);
+}
+
 /* Toast Notification */
 .toast-notification {
     position: fixed;

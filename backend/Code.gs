@@ -199,11 +199,49 @@ function doPost(e) {
       if (requestData.remarks !== undefined && requestData.remarks !== null) {
         sheet.getRange(rowIndex, 14).setValue(requestData.remarks);
       }
+      if (requestData.applicantName) {
+        sheet.getRange(rowIndex, 1).setValue(requestData.applicantName);
+      }
+      if (requestData.fatherName !== undefined && requestData.fatherName !== null) {
+        sheet.getRange(rowIndex, 2).setValue(requestData.fatherName);
+      }
       SpreadsheetApp.flush();
 
       return createJsonResponse({
         success: true,
         message: "Status updated successfully in Column M."
+      });
+    }
+
+    if (action === "updateName" || action === "updateApplicantName" || action === "editName") {
+      let rawRow = requestData.rowNumber;
+      if (!rawRow && requestData.id) {
+        const matches = String(requestData.id).match(/\d+/);
+        if (matches) rawRow = matches[0];
+      }
+      const rowIndex = parseInt(rawRow, 10);
+      const newApplicantName = requestData.applicantName || requestData.name;
+      const newFatherName = requestData.fatherName;
+
+      if (!rowIndex || isNaN(rowIndex) || rowIndex < 2 || !newApplicantName) {
+        return createJsonResponse({
+          success: false,
+          error: "Valid rowNumber and applicantName are required."
+        });
+      }
+
+      // Column A is Column 1 (Applicant Name)
+      sheet.getRange(rowIndex, 1).setValue(newApplicantName);
+
+      // Column B is Column 2 (Father/Husband Name)
+      if (newFatherName !== undefined && newFatherName !== null) {
+        sheet.getRange(rowIndex, 2).setValue(newFatherName);
+      }
+      SpreadsheetApp.flush();
+
+      return createJsonResponse({
+        success: true,
+        message: "Applicant name updated successfully in Column A."
       });
     }
 

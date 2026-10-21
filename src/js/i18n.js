@@ -162,6 +162,21 @@ export const TRANSLATIONS = {
     statusUpdateFailed: "⚠️ स्थिति अपडेट करने में त्रुटि हुई",
     actionEditStatus: "स्थिति बदलें",
 
+    // Name Edit Modal & Toast
+    modalNameTitle: "आवेदक का नाम संपादित करें",
+    modalNameSub: "आवेदक एवं पिता/पति का नाम अपडेट करें",
+    lblEditApplicantName: "हितग्राही / आवेदक का नाम *",
+    lblEditFatherName: "पिता / पति का नाम",
+    phEditApplicantName: "पूरा नाम दर्ज करें...",
+    phEditFatherName: "पिता या पति का नाम...",
+    btnSaveName: "✓ नाम सुरक्षित करें",
+    btnSavingName: "⏳ नाम अपडेट हो रहा है...",
+    nameUpdatedSuccess: "✓ नाम सफलतापूर्वक अपडेट कर दिया गया!",
+    nameUpdateFailed: "⚠️ नाम अपडेट करने में त्रुटि हुई",
+    actionEditName: "नाम संपादित करें",
+    btnEditName: "नाम बदलें",
+    valNameRequired: "कृपया आवेदक का नाम दर्ज करें",
+
     // Footer
     portalCopyright: "© 2026 दक्षिण बस्तर दंतेवाडा जिला | सर्वाधिकार सुरक्षित",
     portalHours: "शिकायत पंजीकरण समय: 10:00 AM - 5:00 PM (सोमवार - शुक्रवार)"
@@ -319,6 +334,21 @@ export const TRANSLATIONS = {
     statusUpdatedSuccess: "✓ Status updated successfully!",
     statusUpdateFailed: "⚠️ Failed to update status",
     actionEditStatus: "Change Status",
+
+    // Name Edit Modal & Toast
+    modalNameTitle: "Edit Applicant Name",
+    modalNameSub: "Update applicant and father/husband name",
+    lblEditApplicantName: "Applicant Name *",
+    lblEditFatherName: "Father / Husband Name",
+    phEditApplicantName: "Enter full name...",
+    phEditFatherName: "Enter father/husband name...",
+    btnSaveName: "✓ Save Name",
+    btnSavingName: "⏳ Saving Name...",
+    nameUpdatedSuccess: "✓ Name updated successfully!",
+    nameUpdateFailed: "⚠️ Failed to update name",
+    actionEditName: "Edit Name",
+    btnEditName: "Edit Name",
+    valNameRequired: "Please enter applicant name",
 
     // Footer
     portalCopyright: "© 2026 South Bastar Dantewada District | All Rights Reserved",

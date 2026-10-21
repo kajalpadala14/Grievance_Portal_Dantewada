@@ -1,5 +1,5 @@
 import { getCurrentLanguage, applyLanguage, toggleLanguage, TRANSLATIONS } from './i18n.js';
-import { getInitialData, submitGrievance, APPS_SCRIPT_URL, fetchLocationsFromSheet, updateGrievanceStatus } from './api.js';
+import { getInitialData, submitGrievance, APPS_SCRIPT_URL, fetchLocationsFromSheet, updateGrievanceStatus, updateGrievanceName } from './api.js';
 import { DEFAULT_CONFIG } from '../config/defaultConfig.js';
 
 // Application State
@@ -1640,6 +1640,7 @@ function setupEventListeners() {
         if (e.key === 'Escape') {
             closeSubmissionModal();
             closeStatusEditModal();
+            closeNameEditModal();
         }
     });
 
@@ -1673,7 +1674,71 @@ function setupEventListeners() {
         });
     }
 
-    // 4c. Inline Status Change & Edit Modal Table delegation
+    // Trigger name edit directly from status modal
+    const btnEditNameFromStatusModal = document.getElementById('btnEditNameFromStatusModal');
+    if (btnEditNameFromStatusModal) {
+        btnEditNameFromStatusModal.addEventListener('click', () => {
+            const id = document.getElementById('editStatusGrievanceId')?.value;
+            if (id) {
+                closeStatusEditModal();
+                openNameEditModal(id);
+            }
+        });
+    }
+
+    // 4c. Name Edit Modal handlers
+    const saveNameModalBtn = document.getElementById('saveNameModalBtn');
+    if (saveNameModalBtn) {
+        saveNameModalBtn.addEventListener('click', async () => {
+            const id = document.getElementById('editNameGrievanceId')?.value;
+            const rowNumber = document.getElementById('editNameRowNumber')?.value;
+            const newApplicantName = document.getElementById('editApplicantNameInput')?.value?.trim();
+            const newFatherName = document.getElementById('editFatherNameInput')?.value?.trim();
+            const lang = getCurrentLanguage();
+            const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+
+            if (!newApplicantName) {
+                alert(t.valNameRequired || 'कृपया आवेदक का नाम दर्ज करें');
+                document.getElementById('editApplicantNameInput')?.focus();
+                return;
+            }
+
+            if (id && newApplicantName) {
+                closeNameEditModal();
+                await changeGrievanceName(id, newApplicantName, newFatherName, rowNumber);
+            }
+        });
+    }
+
+    const cancelNameModalBtn = document.getElementById('cancelNameModalBtn');
+    if (cancelNameModalBtn) {
+        cancelNameModalBtn.addEventListener('click', closeNameEditModal);
+    }
+
+    const nameModal = document.getElementById('nameEditModal');
+    if (nameModal) {
+        nameModal.addEventListener('click', (e) => {
+            if (e.target === nameModal) {
+                closeNameEditModal();
+            }
+        });
+    }
+
+    // Enter key triggers save in name edit inputs
+    const editApplicantNameInput = document.getElementById('editApplicantNameInput');
+    const editFatherNameInput = document.getElementById('editFatherNameInput');
+    [editApplicantNameInput, editFatherNameInput].forEach(inp => {
+        if (inp) {
+            inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveNameModalBtn?.click();
+                }
+            });
+        }
+    });
+
+    // 4d. Inline Status Change & Edit Modal Table delegation
     const grievancesContainer = document.getElementById('grievancesContainer');
     if (grievancesContainer) {
         grievancesContainer.addEventListener('change', (e) => {
@@ -1688,12 +1753,22 @@ function setupEventListeners() {
         });
 
         grievancesContainer.addEventListener('click', (e) => {
-            const btn = e.target.closest('.btn-status-edit-modal');
-            if (btn) {
-                const id = btn.getAttribute('data-id');
+            const statusBtn = e.target.closest('.btn-status-edit-modal');
+            if (statusBtn) {
+                const id = statusBtn.getAttribute('data-id');
                 if (id) {
                     openStatusEditModal(id);
                 }
+                return;
+            }
+
+            const nameBtn = e.target.closest('.btn-name-edit-modal');
+            if (nameBtn) {
+                const id = nameBtn.getAttribute('data-id');
+                if (id) {
+                    openNameEditModal(id);
+                }
+                return;
             }
         });
     }
@@ -2252,6 +2327,77 @@ async function changeGrievanceStatus(id, newStatus, remarks = null, rowNumber = 
 }
 
 /**
+ * Open Name Edit Modal Popup
+ */
+function openNameEditModal(id) {
+    const g = grievances.find(item => String(item.id) === String(id));
+    if (!g) return;
+
+    const modal = document.getElementById('nameEditModal');
+    const idInput = document.getElementById('editNameGrievanceId');
+    const rowInput = document.getElementById('editNameRowNumber');
+    const displayId = document.getElementById('editNameDisplayId');
+    const applicantNameInput = document.getElementById('editApplicantNameInput');
+    const fatherNameInput = document.getElementById('editFatherNameInput');
+
+    if (!modal) return;
+
+    if (idInput) idInput.value = g.id || '';
+    if (rowInput) rowInput.value = g.rowNumber || '';
+    if (displayId) displayId.textContent = g.id || '-';
+    if (applicantNameInput) applicantNameInput.value = g.applicantName || '';
+    if (fatherNameInput) fatherNameInput.value = g.fatherName || '';
+
+    modal.classList.add('show');
+    setTimeout(() => {
+        applicantNameInput?.focus();
+        applicantNameInput?.select();
+    }, 100);
+}
+
+/**
+ * Close Name Edit Modal Popup
+ */
+function closeNameEditModal() {
+    const modal = document.getElementById('nameEditModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+/**
+ * Update grievance applicant name locally and sync to Google Sheet
+ */
+async function changeGrievanceName(id, newApplicantName, newFatherName = null, rowNumber = null) {
+    const lang = getCurrentLanguage();
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.hi;
+
+    const gIndex = grievances.findIndex(g => String(g.id) === String(id) || (rowNumber && String(g.rowNumber) === String(rowNumber)));
+    if (gIndex === -1) return;
+
+    const target = grievances[gIndex];
+    target.applicantName = newApplicantName;
+    if (newFatherName !== null && newFatherName !== undefined) {
+        target.fatherName = newFatherName;
+    }
+
+    // Immediately reflect across dashboard & table
+    displayGrievances();
+
+    showToast(`${t.nameUpdatedSuccess || '✓ नाम सफलतापूर्वक अपडेट कर दिया गया!'} (${newApplicantName})`);
+
+    try {
+        const result = await updateGrievanceName(id, newApplicantName, newFatherName, rowNumber || target.rowNumber);
+        if (result && !result.syncedToSheet && result.error) {
+            console.warn('[Name] Synced locally, but Google Sheet warning:', result.error);
+        }
+    } catch (err) {
+        console.error('[Name] Error syncing name to Google Sheet:', err);
+        showToast(t.nameUpdateFailed || '⚠️ नाम अपडेट करने में त्रुटि हुई', true);
+    }
+}
+
+/**
  * Show submission status alert (Google Sheet synced vs Offline fallback)
  */
 function showSubmissionFeedback(synced, errorMsg = '') {
@@ -2772,8 +2918,13 @@ function displayGrievances() {
         html += `
             <tr>
                 <td data-label="आवेदक | Applicant">
-                    <span class="table-applicant-name">${escapeHtml(g.applicantName || 'अज्ञात / Unknown')}</span>
-                    <span class="table-applicant-sub">${escapeHtml(g.phone ? '📞 ' + g.phone : (g.fatherName ? 'पिता: ' + g.fatherName : ''))}</span>
+                    <div class="table-applicant-wrap">
+                        <div class="table-applicant-info">
+                            <span class="table-applicant-name">${escapeHtml(g.applicantName || 'अज्ञात / Unknown')}</span>
+                            <span class="table-applicant-sub">${escapeHtml(g.phone ? '📞 ' + g.phone : (g.fatherName ? 'पिता: ' + g.fatherName : ''))}</span>
+                        </div>
+                        <button type="button" class="btn-name-edit-modal" data-id="${escapeHtml(g.id)}" title="${escapeHtml(t.actionEditName || 'नाम संपादित करें | Edit Name')}" aria-label="Edit Name">✏️</button>
+                    </div>
                 </td>
                 <td data-label="स्थान | Location">${escapeHtml(locationText || '-')}</td>
                 <td data-label="कारण | Reason"><strong>${escapeHtml(g.reason || '-')}</strong></td>
@@ -2837,6 +2988,8 @@ window.toggleLanguage = toggleLanguage;
 window.__toggleLanguage = toggleLanguage;
 window.openStatusEditModal = openStatusEditModal;
 window.closeStatusEditModal = closeStatusEditModal;
+window.openNameEditModal = openNameEditModal;
+window.closeNameEditModal = closeNameEditModal;
 
 // Hook called by i18n.js when language changes
 window.__onLanguageChanged = function(lang) {

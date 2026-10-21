@@ -293,3 +293,68 @@ export async function updateGrievanceStatus(id, newStatus, remarks = null, rowNu
     error: backendError
   };
 }
+
+/**
+ * Update the applicant name (and optionally father/husband name) of an existing grievance
+ */
+export async function updateGrievanceName(id, newApplicantName, newFatherName = null, rowNumber = null) {
+  let backendSuccess = false;
+  let backendError = null;
+
+  // 1. Update in LocalStorage
+  const localGrievances = getStoredGrievances();
+  const index = localGrievances.findIndex(g => String(g.id) === String(id) || (rowNumber && String(g.rowNumber) === String(rowNumber)));
+  if (index !== -1) {
+    localGrievances[index].applicantName = newApplicantName;
+    if (newFatherName !== null && newFatherName !== undefined) {
+      localGrievances[index].fatherName = newFatherName;
+    }
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localGrievances));
+  }
+
+  // 2. Sync to Google Apps Script
+  if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== "") {
+    try {
+      const payload = {
+        action: "updateName",
+        id: id,
+        applicantName: newApplicantName
+      };
+      if (rowNumber) payload.rowNumber = rowNumber;
+      if (newFatherName !== null && newFatherName !== undefined) payload.fatherName = newFatherName;
+
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        credentials: "omit",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      try {
+        const result = JSON.parse(responseText);
+        if (result.success) {
+          backendSuccess = true;
+          console.log("[API] Applicant name updated in Google Sheet successfully:", result);
+        } else {
+          backendError = result.error || "Failed to update name in Google Sheet.";
+        }
+      } catch (parseErr) {
+        backendError = "Apps Script returned non-JSON response.";
+      }
+    } catch (err) {
+      backendError = err.message || "Network Error while updating name.";
+    }
+  }
+
+  return {
+    success: true,
+    syncedToSheet: backendSuccess,
+    error: backendError
+  };
+}
+
