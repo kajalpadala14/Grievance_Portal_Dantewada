@@ -65,9 +65,20 @@ export async function getInitialData() {
         const result = await response.json();
         if (result.success) {
           if (result.config) {
-            const sheetReasons = (result.config.reasons && result.config.reasons.length > 0 && !result.config.reasons.some(r => r.value === "आवेदन संबंधी"))
-              ? result.config.reasons
-              : DEFAULT_CONFIG.reasons;
+            let sheetReasons = (result.config.reasons && result.config.reasons.length > 0 && !result.config.reasons.some(r => r.value === "आवेदन संबंधी"))
+              ? [...result.config.reasons]
+              : [...DEFAULT_CONFIG.reasons];
+
+            // Always ensure "Name Change" is present in reasons if missing from the Sheet/backend
+            if (!sheetReasons.some(r => r.value === "Name Change")) {
+              const rajpatraIdx = sheetReasons.findIndex(r => r.value === "Rajpatra Process Information");
+              const nameChangeObj = { value: "Name Change", label: "Name Change | नाम परिवर्तन / सुधार" };
+              if (rajpatraIdx !== -1) {
+                sheetReasons.splice(rajpatraIdx + 1, 0, nameChangeObj);
+              } else {
+                sheetReasons.unshift(nameChangeObj);
+              }
+            }
 
             const sheetPortalInfo = (result.config.portalInfo && result.config.portalInfo.title && !result.config.portalInfo.title.includes("सार्वजनिक"))
               ? result.config.portalInfo

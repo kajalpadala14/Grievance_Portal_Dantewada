@@ -220,6 +220,16 @@ function renderFormOptions(config) {
     // 2. Populate Reason Dropdown
     const reasonSelect = document.getElementById('reason');
     if (reasonSelect && Array.isArray(config.reasons)) {
+        // Ensure Name Change option is always available
+        if (!config.reasons.some(r => r.value === 'Name Change')) {
+            const rajpatraIdx = config.reasons.findIndex(r => r.value === 'Rajpatra Process Information');
+            const nameChangeObj = { value: 'Name Change', label: 'Name Change | नाम परिवर्तन / सुधार' };
+            if (rajpatraIdx !== -1) {
+                config.reasons.splice(rajpatraIdx + 1, 0, nameChangeObj);
+            } else {
+                config.reasons.unshift(nameChangeObj);
+            }
+        }
         const currentValue = reasonSelect.value;
         let html = `<option value="">${t.optSelectReason}</option>`;
         config.reasons.forEach(r => {
