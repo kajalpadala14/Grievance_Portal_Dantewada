@@ -2928,13 +2928,8 @@ function displayGrievances() {
         html += `
             <tr>
                 <td data-label="आवेदक | Applicant">
-                    <div class="table-applicant-wrap">
-                        <div class="table-applicant-info">
-                            <span class="table-applicant-name">${escapeHtml(g.applicantName || 'अज्ञात / Unknown')}</span>
-                            <span class="table-applicant-sub">${escapeHtml(g.phone ? '📞 ' + g.phone : (g.fatherName ? 'पिता: ' + g.fatherName : ''))}</span>
-                        </div>
-                        <button type="button" class="btn-name-edit-modal" data-id="${escapeHtml(g.id)}" title="${escapeHtml(t.actionEditName || 'नाम संपादित करें | Edit Name')}" aria-label="Edit Name">✏️</button>
-                    </div>
+                    <span class="table-applicant-name">${escapeHtml(g.applicantName || 'अज्ञात / Unknown')}</span>
+                    <span class="table-applicant-sub">${escapeHtml(g.phone ? '📞 ' + g.phone : (g.fatherName ? 'पिता: ' + g.fatherName : ''))}</span>
                 </td>
                 <td data-label="स्थान | Location">${escapeHtml(locationText || '-')}</td>
                 <td data-label="कारण | Reason"><strong>${escapeHtml(g.reason || '-')}</strong></td>
